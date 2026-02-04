@@ -1,0 +1,153 @@
+# GAGOS - Lightweight DevOps Platform
+# All-in-one deployment with Kubernetes RBAC (emptyDir storage)
+#
+# See also:
+#   - gagos-quick-start.yaml  - Minimal setup for testing
+#   - gagos-persistent.yaml   - Production setup with PVC
+#
+# Usage:
+#   # Create namespace and generate random password
+#   kubectl create namespace gagos
+#   kubectl label namespace gagos app=gagos
+#   kubectl create secret generic gagos-auth -n gagos \
+#     --from-literal=password=$(openssl rand -base64 12)
+#
+#   # Deploy
+#   kubectl apply -f gagos-all-in-one.yaml
+#
+#   # Get your password
+#   kubectl get secret gagos-auth -n gagos -o jsonpath='{.data.password}' | base64 -d && echo
+#
+#   # Access
+#   kubectl port-forward -n gagos svc/gagos 9197:8080
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: gagos
+  namespace: gagos
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: gagos-cluster-role
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "pods/log", "services", "endpoints", "namespaces", "nodes", "events", "persistentvolumeclaims", "persistentvolumes"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["delete"]
+  - apiGroups: [""]
+    resources: ["configmaps", "secrets"]
+    verbs: ["get", "list", "watch", "create", "delete"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "deployments/scale", "daemonsets", "replicasets", "statefulsets"]
+    verbs: ["get", "list", "watch", "update", "patch"]
+  - apiGroups: ["batch"]
+    resources: ["jobs", "cronjobs"]
+    verbs: ["get", "list", "watch", "create", "delete"]
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["ingresses", "networkpolicies"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["metrics.k8s.io"]
+    resources: ["pods", "nodes"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: gagos-cluster-role-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: gagos-cluster-role
+subjects:
+  - kind: ServiceAccount
+    name: gagos
+    namespace: gagos
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gagos-config
+  namespace: gagos
+data:
+  GAGOS_HOST: "0.0.0.0"
+  GAGOS_PORT: "8080"
+  GAGOS_LOG_LEVEL: "info"
+  GAGOS_DB_PATH: "/data/gagos.db"
+  GAGOS_STORAGE_TYPE: "bbolt"
+  GAGOS_RUNTIME: "kubernetes"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gagos
+  namespace: gagos
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gagos
+  template:
+    metadata:
+      labels:
+        app: gagos
+    spec:
+      serviceAccountName: gagos
+      containers:
+        - name: gagos
+          image: netstudioge/gagos:latest
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: gagos-config
+          env:
+            - name: GAGOS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: gagos-auth
+                  key: password
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gagos
+  namespace: gagos
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+  selector:
+    app: gagos

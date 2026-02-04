@@ -1,0 +1,2611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GAGOS - Lightweight DevOps Platform</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css">
+    <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.js"></script>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div id="desktop">
+        <!-- Desktop Icons - 6x4 Grid rendered dynamically -->
+        <div class="desktop-icons" id="desktop-icons-container"></div>
+        <img src="/images/gagos_small.png" alt="GAGOS" style="position:absolute;bottom:60px;right:20px;width:120px;height:auto;pointer-events:none;">
+
+        <!-- Network Tools Window -->
+        <div id="window-network" class="window" style="width:800px;height:600px;left:150px;top:50px;">
+            <div class="window-header" onmousedown="startDrag(event, 'network')">
+                <div class="window-title">
+                    <svg fill="none" stroke="#4ade80" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path>
+                    </svg>
+                    Network Tools
+                </div>
+                <div class="window-controls">
+                    <button class="window-btn minimize" onclick="minimizeWindow('network')" title="Minimize">
+                        <svg fill="currentColor" viewBox="0 0 24 24"><path d="M19 13H5v-2h14v2z"/></svg>
+                    </button>
+                    <button class="window-btn maximize" onclick="maximizeWindow('network')" title="Maximize" id="max-btn-network">
+                        <svg class="max-icon" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
+                        <svg class="restore-icon" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><rect x="6" y="6" width="11" height="11" rx="1"/><path d="M9 6V5a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2h-1"/></svg>
+                    </button>
+                    <button class="window-btn close" onclick="closeWindow('network')" title="Close">
+                        <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M6 6l12 12M6 18L18 6"/></svg>
+                    </button>
+                </div>
+            </div>
+            <div class="tab-bar">
+                <button class="tab-btn active" onclick="showNetTab('ping')">Ping</button>
+                <button class="tab-btn" onclick="showNetTab('dns')">DNS</button>
+                <button class="tab-btn" onclick="showNetTab('port')">Port Check</button>
+                <button class="tab-btn" onclick="showNetTab('traceroute')">Traceroute</button>
+                <button class="tab-btn" onclick="showNetTab('telnet')">Telnet</button>
+                <button class="tab-btn" onclick="showNetTab('whois')">Whois</button>
+                <button class="tab-btn" onclick="showNetTab('ssl')">SSL Check</button>
+                <button class="tab-btn" onclick="showNetTab('curl')">HTTP/Curl</button>
+                <button class="tab-btn" onclick="showNetTab('interfaces')">Interfaces</button>
+            </div>
+            <div class="window-content" style="display:flex;flex-direction:column;">
+                <!-- Ping Tab -->
+                <div id="net-tab-ping" class="tab-content active">
+                    <div class="tool-section">
+                        <h3>ICMP Ping</h3>
+                        <div class="tool-row">
+                            <input type="text" id="ping-host" placeholder="Host (e.g., google.com)" style="flex:1">
+                            <input type="number" id="ping-count" value="4" min="1" max="10" style="width:70px" title="Count">
+                            <button class="action-btn" onclick="runPing()">Ping</button>
+                        </div>
+                        <div id="ping-result" class="output-box">Enter a host and click Ping to test connectivity.</div>
+                    </div>
+                </div>
+
+                <!-- DNS Tab -->
+                <div id="net-tab-dns" class="tab-content">
+                    <div class="tool-section">
+                        <h3>DNS Lookup</h3>
+                        <div class="tool-row">
+                            <input type="text" id="dns-host" placeholder="Domain (e.g., google.com)" style="flex:1">
+                            <select id="dns-type" style="width:100px">
+                                <option value="A">A</option>
+                                <option value="AAAA">AAAA</option>
+                                <option value="CNAME">CNAME</option>
+                                <option value="MX">MX</option>
+                                <option value="NS">NS</option>
+                                <option value="TXT">TXT</option>
+                            </select>
+                            <button class="action-btn" onclick="runDNS()">Lookup</button>
+                        </div>
+                        <div id="dns-result" class="output-box">Enter a domain and select record type to lookup.</div>
+                    </div>
+                </div>
+
+                <!-- Port Check Tab -->
+                <div id="net-tab-port" class="tab-content">
+                    <div class="tool-section">
+                        <h3>TCP Port Check</h3>
+                        <div class="tool-row">
+                            <input type="text" id="port-host" placeholder="Host" style="flex:1">
+                            <input type="number" id="port-number" placeholder="Port" min="1" max="65535" style="width:100px">
+                            <button class="action-btn" onclick="runPortCheck()">Check</button>
+                        </div>
+                        <div id="port-result" class="output-box">Enter host and port to check if it's open.</div>
+                    </div>
+                </div>
+
+                <!-- Traceroute Tab -->
+                <div id="net-tab-traceroute" class="tab-content">
+                    <div class="tool-section">
+                        <h3>Traceroute</h3>
+                        <div class="tool-row">
+                            <input type="text" id="trace-host" placeholder="Host" style="flex:1">
+                            <input type="number" id="trace-hops" value="15" min="1" max="30" style="width:70px" title="Max Hops">
+                            <button class="action-btn" onclick="runTraceroute()">Trace</button>
+                        </div>
+                        <div id="trace-result" class="output-box">Enter a host to trace the network path.</div>
+                    </div>
+                </div>
+
+                <!-- Telnet Tab -->
+                <div id="net-tab-telnet" class="tab-content">
+                    <div class="tool-section">
+                        <h3>Telnet / TCP Connect</h3>
+                        <div class="tool-row">
+                            <input type="text" id="telnet-host" placeholder="Host" style="flex:1">
+                            <input type="number" id="telnet-port" placeholder="Port" min="1" max="65535" style="width:100px">
+                        </div>
+                        <div class="tool-row">
+                            <input type="text" id="telnet-command" placeholder="Command to send (optional)" style="flex:1">
+                            <button class="action-btn" onclick="runTelnet()">Connect</button>
+                        </div>
+                        <div id="telnet-result" class="output-box">Connect to a TCP port and optionally send a command.</div>
+                    </div>
+                </div>
+
+                <!-- Whois Tab -->
+                <div id="net-tab-whois" class="tab-content">
+                    <div class="tool-section">
+                        <h3>Whois Lookup</h3>
+                        <div class="tool-row">
+                            <input type="text" id="whois-query" placeholder="Domain or IP (e.g., google.com, 8.8.8.8)" style="flex:1">
+                            <button class="action-btn" onclick="runWhois()">Lookup</button>
+                        </div>
+                        <div id="whois-result" class="output-box" style="max-height:400px;">Enter a domain or IP address to lookup registration info.</div>
+                    </div>
+                </div>
+
+                <!-- SSL Check Tab -->
+                <div id="net-tab-ssl" class="tab-content">
+                    <div class="tool-section">
+                        <h3>SSL Certificate Check</h3>
+                        <div class="tool-row">
+                            <input type="text" id="ssl-host" placeholder="Host (e.g., google.com)" style="flex:1">
+                            <input type="number" id="ssl-port" placeholder="443" value="443" min="1" max="65535" style="width:100px">
+                            <button class="action-btn" onclick="runSSLCheck()">Check</button>
+                        </div>
+                        <div id="ssl-result" class="output-box">Enter a host to check its SSL certificate.</div>
+                    </div>
+                </div>
+
+                <!-- HTTP/Curl Tab -->
+                <div id="net-tab-curl" class="tab-content">
+                    <div class="tool-section">
+                        <h3>HTTP Request (Curl)</h3>
+                        <div class="tool-row">
+                            <select id="curl-method" style="width:100px">
+                                <option value="GET">GET</option>
+                                <option value="POST">POST</option>
+                                <option value="PUT">PUT</option>
+                                <option value="DELETE">DELETE</option>
+                                <option value="HEAD">HEAD</option>
+                            </select>
+                            <input type="text" id="curl-url" placeholder="URL (e.g., https://api.example.com)" style="flex:1">
+                            <button class="action-btn" onclick="runCurl()">Send</button>
+                        </div>
+                        <div class="tool-row">
+                            <textarea id="curl-headers" placeholder="Headers (one per line, e.g., Authorization: Bearer xxx)" style="flex:1;min-height:50px;"></textarea>
+                        </div>
+                        <div class="tool-row">
+                            <textarea id="curl-body" placeholder="Request body (for POST/PUT)" style="flex:1;min-height:50px;"></textarea>
+                        </div>
+                        <div class="tool-row">
+                            <div class="checkbox-row">
+                                <input type="checkbox" id="curl-follow" checked>
+                                <label for="curl-follow">Follow Redirects</label>
+                            </div>
+                            <div class="checkbox-row" style="margin-left:20px;">
+                                <input type="checkbox" id="curl-body-include">
+                                <label for="curl-body-include">Include Response Body</label>
+                            </div>
+                        </div>
+                        <div id="curl-result" class="output-box" style="max-height:400px;">Enter a URL and click Send to make an HTTP request.</div>
+                    </div>
+                </div>
+
+                <!-- Interfaces Tab -->
+                <div id="net-tab-interfaces" class="tab-content">
+                    <div class="tool-section">
+                        <h3>Network Interfaces</h3>
+                        <div class="tool-row">
+                            <button class="action-btn" onclick="loadInterfaces()">Refresh</button>
+                        </div>
+                        <div id="interfaces-result" class="output-box" style="max-height:400px;">Click Refresh to list network interfaces.</div>
+                    </div>
+                </div>
+            </div>
+            <div class="resize-handle" onmousedown="startResize(event, 'network')"></div>
+        </div>
+
+        <!-- Kubernetes Window -->
+        <div id="window-kubernetes" class="window" style="width:900px;height:650px;left:200px;top:80px;">
+            <div class="window-header" onmousedown="startDrag(event, 'kubernetes')">
+                <div class="window-title">
+                    <svg fill="none" stroke="#667eea" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                    </svg>
+                    Kubernetes
+                </div>
+                <div class="window-controls">
+                    <button class="window-btn minimize" onclick="minimizeWindow('kubernetes')" title="Minimize">
+                        <svg fill="currentColor" viewBox="0 0 24 24"><path d="M19 13H5v-2h14v2z"/></svg>
+                    </button>
+                    <button class="window-btn maximize" onclick="maximizeWindow('kubernetes')" title="Maximize" id="max-btn-kubernetes">
+                        <svg class="max-icon" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
+                        <svg class="restore-icon" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><rect x="6" y="6" width="11" height="11" rx="1"/><path d="M9 6V5a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2h-1"/></svg>
+                    </button>
+                    <button class="window-btn close" onclick="closeWindow('kubernetes')" title="Close">
+                        <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M6 6l12 12M6 18L18 6"/></svg>
+                    </button>
+                </div>
+            </div>
+            <div class="tab-bar" style="flex-wrap:wrap;">
+                <button class="tab-btn active" onclick="showK8sTab('overview')">Overview</button>
+                <button class="tab-btn" onclick="showK8sTab('pods')">Pods</button>
+                <button class="tab-btn" onclick="showK8sTab('services')">Services</button>
+                <button class="tab-btn" onclick="showK8sTab('deployments')">Deployments</button>
+                <button class="tab-btn" onclick="showK8sTab('daemonsets')">DaemonSets</button>
+                <button class="tab-btn" onclick="showK8sTab('statefulsets')">StatefulSets</button>
+                <button class="tab-btn" onclick="showK8sTab('jobs')">Jobs</button>
+                <button class="tab-btn" onclick="showK8sTab('cronjobs')">CronJobs</button>
+                <button class="tab-btn" onclick="showK8sTab('configmaps')">ConfigMaps</button>
+                <button class="tab-btn" onclick="showK8sTab('secrets')">Secrets</button>
+                <button class="tab-btn" onclick="showK8sTab('ingresses')">Ingresses</button>
+                <button class="tab-btn" onclick="showK8sTab('pvcs')">PVCs</button>
+                <button class="tab-btn" onclick="showK8sTab('nodes')">Nodes</button>
+                <button class="tab-btn" onclick="showK8sTab('events')">Events</button>
+            </div>
+            <div class="edit-mode-bar">
+                <div class="edit-mode-toggle">
+                    <button id="edit-mode-btn" class="edit-mode-btn" onclick="toggleEditMode()">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                        </svg>
+                        <span id="edit-mode-label">Enable Edit Mode</span>
+                    </button>
+                    <span id="edit-mode-timer" class="edit-mode-timer">5:00</span>
+                </div>
+                <button id="create-resource-btn" class="create-resource-btn" onclick="openCreateModal()" style="display:none;">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:14px;height:14px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    Create Resource
+                </button>
+                <div class="auto-refresh-toggle">
+                    <button id="auto-refresh-btn" class="auto-refresh-btn" onclick="toggleAutoRefresh()">
+                        <svg id="refresh-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:14px;height:14px;">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                        </svg>
+                        <span id="auto-refresh-label">Auto</span>
+                    </button>
+                    <select id="refresh-interval" class="refresh-interval-select" onchange="updateRefreshInterval()">
+                        <option value="5">5s</option>
+                        <option value="10" selected>10s</option>
+                        <option value="30">30s</option>
+                        <option value="60">60s</option>
+                    </select>
+                </div>
+                <span style="font-size:11px;color:#6a6a7a;">Edit mode allows describe, edit, delete, and create operations</span>
+            </div>
+            <div class="window-content" style="display:flex;flex-direction:column;">
+                <!-- Overview Tab -->
+                <div id="k8s-tab-overview" class="tab-content active">
+                    <div class="k8s-cards" id="k8s-stats">
+                        <div class="k8s-card">
+                            <div class="count" id="ns-count">-</div>
+                            <div class="label">Namespaces</div>
+                        </div>
+                        <div class="k8s-card">
+                            <div class="count" id="pod-count">-</div>
+                            <div class="label">Pods</div>
+                        </div>
+                        <div class="k8s-card">
+                            <div class="count" id="svc-count">-</div>
+                            <div class="label">Services</div>
+                        </div>
+                        <div class="k8s-card">
+                            <div class="count" id="deploy-count">-</div>
+                            <div class="label">Deployments</div>
+                        </div>
+                        <div class="k8s-card">
+                            <div class="count" id="node-count">-</div>
+                            <div class="label">Nodes</div>
+                        </div>
+                    </div>
+
+                    <div class="tool-section">
+                        <h3>Namespaces <span style="color:#667eea;font-size:11px;text-transform:none;">(click to filter)</span></h3>
+                        <div id="namespaces-list" class="namespace-pills"></div>
+                    </div>
+
+                    <div class="tool-section">
+                        <h3>Recent Pods <span id="pods-ns-label" style="color:#667eea"></span></h3>
+                        <div style="overflow-x:auto;max-height:250px;">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Namespace</th>
+                                        <th>Status</th>
+                                        <th>Ready</th>
+                                        <th>Restarts</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="pods-tbody-preview"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pods Tab -->
+                <div id="k8s-tab-pods" class="tab-content">
+                    <div class="tool-section">
+                        <h3>Pods <span id="pods-full-ns-label" style="color:#667eea"></span></h3>
+                        <div class="tool-row" style="margin-bottom:12px;">
+                            <select id="pods-namespace-select" style="width:200px;" onchange="loadPodsForNamespace()">
+                                <option value="">All Namespaces</option>
+                            </select>
+                            <button class="action-btn" onclick="loadPods()">Refresh</button>
+                        </div>
+                        <div style="overflow-x:auto;">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Namespace</th>
+                                        <th>Status</th>
+                                        <th>Ready</th>
+                                        <th>Restarts</th>
+                                        <th>Age</th>
+                                        <th class="actions-col">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="pods-tbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Services Tab -->
+                <div id="k8s-tab-services" class="tab-content">
+                    <div class="tool-section">
+                        <h3>Services</h3>
+                        <div class="tool-row" style="margin-bottom:12px;">
+                            <select id="svc-namespace-select" style="width:200px;" onchange="loadServicesForNamespace()">
+                                <option value="">All Namespaces</option>
+                            </select>
+                            <button class="action-btn" onclick="loadServices()">Refresh</button>
+                        </div>
+                        <div style="overflow-x:auto;">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Namespace</th>
+                                        <th>Type</th>
+                                        <th>Cluster IP</th>
+                                        <th>Ports</th>
+                                        <th class="actions-col">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="services-tbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Deployments Tab -->
+                <div id="k8s-tab-deployments" class="tab-content">
+                    <div class="tool-section">
+                        <h3>Deployments</h3>
+                        <div class="tool-row" style="margin-bottom:12px;">
+                            <select id="deploy-namespace-select" style="width:200px;" onchange="loadDeploymentsForNamespace()">
+                                <option value="">All Namespaces</option>
+                            </select>
+                            <button class="action-btn" onclick="loadDeployments()">Refresh</button>
+                        </div>
+                        <div style="overflow-x:auto;">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Namespace</th>
+                                        <th>Ready</th>
+                                        <th>Available</th>
+                                        <th>Age</th>
+                                        <th class="actions-col">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="deployments-tbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Nodes Tab -->
+                <div id="k8s-tab-nodes" class="tab-content">
+                    <div class="tool-section">
+                        <h3>Cluster Nodes</h3>
+                        <div class="tool-row" style="margin-bottom:12px;">
+                            <button class="action-btn" onclick="loadNodes()">Refresh</button>
+                        </div>
+                        <div style="overflow-x:auto;">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Status</th>
+                                        <th>Roles</th>
+                                        <th>Version</th>
+                                        <th>OS</th>
+                                        <th>Arch</th>
+                                        <th class="actions-col">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="nodes-tbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DaemonSets Tab -->
+                <div id="k8s-tab-daemonsets" class="tab-content">
+                    <div class="tool-section">
+                        <h3>DaemonSets</h3>
+                        <div class="tool-row" style="margin-bottom:12px;">
+                            <select id="ds-namespace-select" style="width:200px;" onchange="loadDaemonSetsForNamespace()">
+                                <option value="">All Namespaces</option>
+                            </select>
+                            <button class="action-btn" onclick="loadDaemonSets()">Refresh</button>
+                        </div>
+                        <div style="overflow-x:auto;">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Namespace</th>
+                                        <th>Desired</th>
+                                        <th>Ready</th>
+                                        <th>Available</th>
+                                        <th>Age</th>
+                                        <th class="actions-col">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="daemonsets-tbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- StatefulSets Tab -->
+                <div id="k8s-tab-statefulsets" class="tab-content">
+                    <div class="tool-section">
+                        <h3>StatefulSets</h3>
+                        <div class="tool-row" style="margin-bottom:12px;">
+                            <select id="sts-namespace-select" style="width:200px;" onchange="loadStatefulSetsForNamespace()">
+                                <option value="">All Namespaces</option>
+                            </select>
+                            <button class="action-btn" onclick="loadStatefulSets()">Refresh</button>
+                        </div>
+                        <div style="overflow-x:auto;">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Namespace</th>
+                                        <th>Ready</th>
+                                        <th>Age</th>
+                                        <th class="actions-col">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="statefulsets-tbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Jobs Tab -->
+                <div id="k8s-tab-jobs" class="tab-content">
+                    <div class="tool-section">
+                        <h3>Jobs</h3>
+                        <div class="tool-row" style="margin-bottom:12px;">
+                            <select id="job-namespace-select" style="width:200px;" onchange="loadJobsForNamespace()">
+                                <option value="">All Namespaces</option>
+                            </select>
+                            <button class="action-btn" onclick="loadJobs()">Refresh</button>
+                        </div>
+                        <div style="overflow-x:auto;">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Namespace</th>
+                                        <th>Completions</th>
+                                        <th>Duration</th>
+                                        <th>Status</th>
+                                        <th>Age</th>
+                                        <th class="actions-col">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="jobs-tbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CronJobs Tab -->
+                <div id="k8s-tab-cronjobs" class="tab-content">
+                    <div class="tool-section">
+                        <h3>CronJobs</h3>
+                        <div class="tool-row" style="margin-bottom:12px;">
+                            <select id="cj-namespace-select" style="width:200px;" onchange="loadCronJobsForNamespace()">
+                                <option value="">All Namespaces</option>
+                            </select>
+                            <button class="action-btn" onclick="loadCronJobs()">Refresh</button>
+                        </div>
+                        <div style="overflow-x:auto;">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Namespace</th>
+                                        <th>Schedule</th>
+                                        <th>Suspend</th>
+                                        <th>Active</th>
+                                        <th>Last Schedule</th>
+                                        <th>Age</th>
+                                        <th class="actions-col">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="cronjobs-tbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ConfigMaps Tab -->
+                <div id="k8s-tab-configmaps" class="tab-content">
+                    <div class="tool-section">
+                        <h3>ConfigMaps</h3>
+                        <div class="tool-row" style="margin-bottom:12px;">
+                            <select id="cm-namespace-select" style="width:200px;" onchange="loadConfigMapsForNamespace()">
+                                <option value="">All Namespaces</option>
+                            </select>
+                            <button class="action-btn" onclick="loadConfigMaps()">Refresh</button>
+                        </div>
+                        <div style="overflow-x:auto;">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Namespace</th>
+                                        <th>Data</th>
+                                        <th>Age</th>
+                                        <th class="actions-col">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="configmaps-tbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Secrets Tab -->
+                <div id="k8s-tab-secrets" class="tab-content">
+                    <div class="tool-section">
+                        <h3>Secrets</h3>
+                        <div class="tool-row" style="margin-bottom:12px;">
+                            <select id="secret-namespace-select" style="width:200px;" onchange="loadSecretsForNamespace()">
+                                <option value="">All Namespaces</option>
+                            </select>
+                            <button class="action-btn" onclick="loadSecrets()">Refresh</button>
+                        </div>
+                        <div style="overflow-x:auto;">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Namespace</th>
+                                        <th>Type</th>
+                                        <th>Data</th>
+                                        <th>Age</th>
+                                        <th class="actions-col">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="secrets-tbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ingresses Tab -->
+                <div id="k8s-tab-ingresses" class="tab-content">
+                    <div class="tool-section">
+                        <h3>Ingresses</h3>
+                        <div class="tool-row" style="margin-bottom:12px;">
+                            <select id="ing-namespace-select" style="width:200px;" onchange="loadIngressesForNamespace()">
+                                <option value="">All Namespaces</option>
+                            </select>
+                            <button class="action-btn" onclick="loadIngresses()">Refresh</button>
+                        </div>
+                        <div style="overflow-x:auto;">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Namespace</th>
+                                        <th>Class</th>
+                                        <th>Hosts</th>
+                                        <th>Address</th>
+                                        <th>Age</th>
+                                        <th class="actions-col">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="ingresses-tbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PVCs Tab -->
+                <div id="k8s-tab-pvcs" class="tab-content">
+                    <div class="tool-section">
+                        <h3>Persistent Volume Claims</h3>
+                        <div class="tool-row" style="margin-bottom:12px;">
+                            <select id="pvc-namespace-select" style="width:200px;" onchange="loadPVCsForNamespace()">
+                                <option value="">All Namespaces</option>
+                            </select>
+                            <button class="action-btn" onclick="loadPVCs()">Refresh</button>
+                        </div>
+                        <div style="overflow-x:auto;">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Namespace</th>
+                                        <th>Status</th>
+                                        <th>Volume</th>
+                                        <th>Capacity</th>
+                                        <th>Storage Class</th>
+                                        <th>Age</th>
+                                        <th class="actions-col">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="pvcs-tbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Events Tab -->
+                <div id="k8s-tab-events" class="tab-content">
+                    <div class="tool-section">
+                        <h3>Events</h3>
+                        <div class="tool-row" style="margin-bottom:12px;">
+                            <select id="event-namespace-select" style="width:200px;" onchange="loadEventsForNamespace()">
+                                <option value="">All Namespaces</option>
+                            </select>
+                            <button class="action-btn" onclick="loadEvents()">Refresh</button>
+                        </div>
+                        <div style="overflow-x:auto;max-height:400px;">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Type</th>
+                                        <th>Reason</th>
+                                        <th>Object</th>
+                                        <th>Message</th>
+                                        <th>Count</th>
+                                        <th>Age</th>
+                                        <th class="actions-col">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="events-tbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="resize-handle" onmousedown="startResize(event, 'kubernetes')"></div>
+        </div>
+
+        <!-- Terminal Window -->
+        <div id="window-terminal" class="window" style="width:600px;height:400px;left:250px;top:100px;">
+            <div class="window-header" onmousedown="startDrag(event, 'terminal')">
+                <div class="window-title">
+                    <svg fill="none" stroke="#fbbf24" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                    </svg>
+                    Terminal
+                </div>
+                <div class="window-controls">
+                    <button class="window-btn minimize" onclick="minimizeWindow('terminal')" title="Minimize">
+                        <svg fill="currentColor" viewBox="0 0 24 24"><path d="M19 13H5v-2h14v2z"/></svg>
+                    </button>
+                    <button class="window-btn maximize" onclick="maximizeWindow('terminal')" title="Maximize" id="max-btn-terminal">
+                        <svg class="max-icon" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
+                        <svg class="restore-icon" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><rect x="6" y="6" width="11" height="11" rx="1"/><path d="M9 6V5a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2h-1"/></svg>
+                    </button>
+                    <button class="window-btn close" onclick="closeWindow('terminal')" title="Close">
+                        <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M6 6l12 12M6 18L18 6"/></svg>
+                    </button>
+                </div>
+            </div>
+            <div class="window-content" style="padding:0;overflow:hidden;">
+                <div id="terminal-container" style="width:100%;height:100%;background:#0d0d14;">
+                    <div id="terminal-loading" style="color:#60a5fa;padding:20px;">Loading terminal...</div>
+                </div>
+            </div>
+            <div class="resize-handle" onmousedown="startResize(event, 'terminal')"></div>
+        </div>
+
+        <!-- About Window -->
+        <div id="window-about" class="window" style="width:400px;height:300px;left:300px;top:150px;">
+            <div class="window-header" onmousedown="startDrag(event, 'about')">
+                <div class="window-title">
+                    <svg fill="none" stroke="#a78bfa" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    About GAGOS
+                </div>
+                <div class="window-controls">
+                    <button class="window-btn minimize" onclick="minimizeWindow('about')" title="Minimize">
+                        <svg fill="currentColor" viewBox="0 0 24 24"><path d="M19 13H5v-2h14v2z"/></svg>
+                    </button>
+                    <button class="window-btn maximize" onclick="maximizeWindow('about')" title="Maximize" id="max-btn-about">
+                        <svg class="max-icon" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
+                        <svg class="restore-icon" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><rect x="6" y="6" width="11" height="11" rx="1"/><path d="M9 6V5a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2h-1"/></svg>
+                    </button>
+                    <button class="window-btn close" onclick="closeWindow('about')" title="Close">
+                        <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M6 6l12 12M6 18L18 6"/></svg>
+                    </button>
+                </div>
+            </div>
+            <div class="window-content" style="text-align:center;padding-top:30px;padding-left:16px;padding-right:16px;">
+                <svg fill="none" stroke="#667eea" viewBox="0 0 24 24" style="width:64px;height:64px;margin-bottom:16px;">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path>
+                </svg>
+                <h2 style="color:white;margin-bottom:8px;">GAGOS</h2>
+                <p style="color:#8a8a9a;margin-bottom:4px;">Lightweight DevOps Platform</p>
+                <p style="color:#667eea;font-size:14px;">Version 0.8.0</p>
+                <p style="color:#6a6a7a;font-size:12px;margin-top:16px;">DevOps OS for Kubernetes Clusters</p>
+                <p style="color:#4a4a5a;font-size:11px;margin-top:6px;">Network Multi-Tool with Desktop UI</p>
+                <div style="margin-top:16px;text-align:left;background:#2a2a3e;padding:12px;border-radius:8px;font-size:11px;">
+                    <div style="color:#8a8a9a;margin-bottom:8px;">
+                        <strong style="color:#a0a0b0;">Network Tools:</strong> Ping, DNS, Port Check, Traceroute, Telnet, Whois, SSL Check, Curl, Interfaces
+                    </div>
+                    <div style="color:#8a8a9a;margin-bottom:8px;">
+                        <strong style="color:#a0a0b0;">Kubernetes:</strong> Namespaces, Pods, Services, Deployments, Nodes
+                    </div>
+                    <div style="color:#8a8a9a;margin-bottom:8px;">
+                        <strong style="color:#a0a0b0;">Apps:</strong> Terminal, Notepad (with browser persistence)
+                    </div>
+                    <div style="color:#667eea;font-size:10px;margin-top:10px;padding-top:8px;border-top:1px solid #3a3a4e;">
+                        Pure Go &bull; Single Binary &bull; Browser Persistence
+                    </div>
+                </div>
+            </div>
+            <div class="resize-handle" onmousedown="startResize(event, 'about')"></div>
+        </div>
+
+        <!-- Notepad Window -->
+        <div id="window-notepad" class="window" style="width:600px;height:450px;left:350px;top:120px;">
+            <div class="window-header" onmousedown="startDrag(event, 'notepad')">
+                <div class="window-title">
+                    <svg fill="none" stroke="#f472b6" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                    </svg>
+                    Notepad
+                </div>
+                <div class="window-controls">
+                    <button class="window-btn minimize" onclick="minimizeWindow('notepad')" title="Minimize">
+                        <svg fill="currentColor" viewBox="0 0 24 24"><path d="M19 13H5v-2h14v2z"/></svg>
+                    </button>
+                    <button class="window-btn maximize" onclick="maximizeWindow('notepad')" title="Maximize" id="max-btn-notepad">
+                        <svg class="max-icon" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
+                        <svg class="restore-icon" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><rect x="6" y="6" width="11" height="11" rx="1"/><path d="M9 6V5a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2h-1"/></svg>
+                    </button>
+                    <button class="window-btn close" onclick="closeWindow('notepad')" title="Close">
+                        <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M6 6l12 12M6 18L18 6"/></svg>
+                    </button>
+                </div>
+            </div>
+            <div class="window-content" style="padding:0;display:flex;flex-direction:column;">
+                <!-- Tab Bar -->
+                <div id="notepad-tabs" style="display:flex;align-items:center;background:#1a1a24;border-bottom:1px solid #2a2a3a;min-height:32px;overflow-x:auto;">
+                    <div id="notepad-tab-list" style="display:flex;flex:1;overflow-x:auto;"></div>
+                    <button onclick="addNotepadTab()" style="background:none;border:none;color:#888;padding:6px 12px;cursor:pointer;font-size:16px;line-height:1;" title="New Tab">+</button>
+                </div>
+                <textarea id="notepad-content"
+                    placeholder="Write your notes here...
+
+Notes are saved automatically to the server and synced across all browsers."
+                    style="flex:1;width:100%;resize:none;background:#0d0d14;color:#e0e0e0;border:none;padding:15px;font-family:'Consolas',monospace;font-size:14px;line-height:1.6;outline:none;"
+                    oninput="saveNotepadContent()"></textarea>
+            </div>
+            <div class="resize-handle" onmousedown="startResize(event, 'notepad')"></div>
+        </div>
+
+        <!-- CI/CD Window -->
+        <div id="window-cicd" class="window" style="width:1000px;height:700px;left:180px;top:60px;">
+            <div class="window-header" onmousedown="startDrag(event, 'cicd')">
+                <div class="window-title">
+                    <svg fill="none" stroke="#22d3ee" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                    CI/CD Pipelines
+                </div>
+                <div class="window-controls">
+                    <button class="window-btn minimize" onclick="minimizeWindow('cicd')" title="Minimize">
+                        <svg fill="currentColor" viewBox="0 0 24 24"><path d="M19 13H5v-2h14v2z"/></svg>
+                    </button>
+                    <button class="window-btn maximize" onclick="maximizeWindow('cicd')" title="Maximize" id="max-btn-cicd">
+                        <svg class="max-icon" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
+                        <svg class="restore-icon" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><rect x="6" y="6" width="11" height="11" rx="1"/><path d="M9 6V5a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2h-1"/></svg>
+                    </button>
+                    <button class="window-btn close" onclick="closeWindow('cicd')" title="Close">
+                        <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M6 6l12 12M6 18L18 6"/></svg>
+                    </button>
+                </div>
+            </div>
+            <div class="tab-bar">
+                <button class="tab-btn active" onclick="showCicdTab('overview')">Overview</button>
+                <button class="tab-btn" onclick="showCicdTab('pipelines')">Pipelines</button>
+                <button class="tab-btn" onclick="showCicdTab('runs')">Runs</button>
+                <button class="tab-btn" onclick="showCicdTab('artifacts')">Artifacts</button>
+                <button class="tab-btn" onclick="showCicdTab('create')">Create</button>
+                <span style="border-left:1px solid #3a3a4e;margin:0 5px;"></span>
+                <button class="tab-btn" onclick="showCicdTab('ssh-hosts')">SSH Hosts</button>
+                <button class="tab-btn" onclick="showCicdTab('git-credentials')">Git Credentials</button>
+                <button class="tab-btn" onclick="showCicdTab('freestyle-jobs')">Freestyle Jobs</button>
+                <button class="tab-btn" onclick="showCicdTab('freestyle-builds')">Builds</button>
+                <span style="border-left:1px solid #3a3a4e;margin:0 5px;"></span>
+                <button class="tab-btn" onclick="showCicdTab('notifications')">Notifications</button>
+            </div>
+            <div class="window-content" style="display:flex;flex-direction:column;padding:15px;">
+                <!-- Overview Tab -->
+                <div id="cicd-tab-overview" class="tab-content active">
+                    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:15px;margin-bottom:20px;">
+                        <div class="stat-card" style="background:#2a2a3e;border-radius:8px;padding:20px;text-align:center;">
+                            <div style="font-size:32px;font-weight:bold;color:#22d3ee;" id="stat-pipelines">0</div>
+                            <div style="color:#8a8a9a;font-size:13px;margin-top:5px;">Pipelines</div>
+                        </div>
+                        <div class="stat-card" style="background:#2a2a3e;border-radius:8px;padding:20px;text-align:center;">
+                            <div style="font-size:32px;font-weight:bold;color:#fbbf24;" id="stat-running">0</div>
+                            <div style="color:#8a8a9a;font-size:13px;margin-top:5px;">Running</div>
+                        </div>
+                        <div class="stat-card" style="background:#2a2a3e;border-radius:8px;padding:20px;text-align:center;">
+                            <div style="font-size:32px;font-weight:bold;color:#4ade80;" id="stat-succeeded">0</div>
+                            <div style="color:#8a8a9a;font-size:13px;margin-top:5px;">Succeeded (24h)</div>
+                        </div>
+                        <div class="stat-card" style="background:#2a2a3e;border-radius:8px;padding:20px;text-align:center;">
+                            <div style="font-size:32px;font-weight:bold;color:#ef4444;" id="stat-failed">0</div>
+                            <div style="color:#8a8a9a;font-size:13px;margin-top:5px;">Failed (24h)</div>
+                        </div>
+                    </div>
+                    <h3 style="color:#e0e0e0;margin-bottom:10px;font-size:14px;">Recent Runs</h3>
+                    <div class="table-container" style="flex:1;overflow:auto;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Run</th>
+                                    <th>Pipeline</th>
+                                    <th>Status</th>
+                                    <th>Trigger</th>
+                                    <th>Duration</th>
+                                    <th>Started</th>
+                                </tr>
+                            </thead>
+                            <tbody id="cicd-recent-runs"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Pipelines Tab -->
+                <div id="cicd-tab-pipelines" class="tab-content">
+                    <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
+                        <button class="action-btn" onclick="showCicdTab('create')" style="background:linear-gradient(135deg,#22d3ee 0%,#0891b2 100%);">
+                            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:16px;height:16px;margin-right:5px;">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+                            </svg>
+                            New Pipeline
+                        </button>
+                    </div>
+                    <div class="table-container" style="flex:1;overflow:auto;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Description</th>
+                                    <th>Last Run</th>
+                                    <th>Total Runs</th>
+                                    <th>Triggers</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="cicd-pipelines-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Runs Tab -->
+                <div id="cicd-tab-runs" class="tab-content">
+                    <div class="table-container" style="flex:1;overflow:auto;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Run #</th>
+                                    <th>Pipeline</th>
+                                    <th>Status</th>
+                                    <th>Trigger</th>
+                                    <th>Jobs</th>
+                                    <th>Duration</th>
+                                    <th>Started</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="cicd-runs-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Artifacts Tab -->
+                <div id="cicd-tab-artifacts" class="tab-content">
+                    <div class="table-container" style="flex:1;overflow:auto;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Pipeline</th>
+                                    <th>Run</th>
+                                    <th>Size</th>
+                                    <th>Created</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="cicd-artifacts-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Create Tab -->
+                <div id="cicd-tab-create" class="tab-content">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                        <h3 style="color:#e0e0e0;font-size:14px;">Pipeline YAML</h3>
+                        <div style="display:flex;gap:10px;">
+                            <button class="action-btn" onclick="loadSamplePipeline()" style="background:rgba(34,211,238,0.2);border:1px solid rgba(34,211,238,0.3);color:#22d3ee;">
+                                Load Sample
+                            </button>
+                            <button class="action-btn" onclick="validatePipeline()" style="background:rgba(251,191,36,0.2);border:1px solid rgba(251,191,36,0.3);color:#fbbf24;">
+                                Validate
+                            </button>
+                            <button class="action-btn" onclick="createPipeline()" style="background:linear-gradient(135deg,#4ade80 0%,#22c55e 100%);">
+                                Create Pipeline
+                            </button>
+                        </div>
+                    </div>
+                    <textarea id="pipeline-yaml-editor" placeholder="Paste your pipeline YAML here or click 'Load Sample' to start..."
+                        style="flex:1;width:100%;resize:none;background:#0d0d14;color:#e0e0e0;border:1px solid #3a3a4e;border-radius:6px;padding:15px;font-family:'Consolas',monospace;font-size:13px;line-height:1.5;outline:none;min-height:400px;"></textarea>
+                    <div id="pipeline-validation-result" style="margin-top:10px;padding:10px;border-radius:6px;display:none;"></div>
+                </div>
+
+                <!-- SSH Hosts Tab -->
+                <div id="cicd-tab-ssh-hosts" class="tab-content">
+                    <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
+                        <button class="action-btn" onclick="showAddSSHHostModal()" style="background:linear-gradient(135deg,#22d3ee 0%,#0891b2 100%);">
+                            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:16px;height:16px;margin-right:5px;">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+                            </svg>
+                            Add Host
+                        </button>
+                    </div>
+                    <div class="table-container" style="flex:1;overflow:auto;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Host</th>
+                                    <th>Username</th>
+                                    <th>Auth</th>
+                                    <th>Groups</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ssh-hosts-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Git Credentials Tab -->
+                <div id="cicd-tab-git-credentials" class="tab-content">
+                    <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
+                        <button class="action-btn" onclick="showAddGitCredentialModal()" style="background:linear-gradient(135deg,#22d3ee 0%,#0891b2 100%);">
+                            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:16px;height:16px;margin-right:5px;">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+                            </svg>
+                            Add Credential
+                        </button>
+                    </div>
+                    <div class="table-container" style="flex:1;overflow:auto;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Description</th>
+                                    <th>Auth Type</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="git-credentials-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Freestyle Jobs Tab -->
+                <div id="cicd-tab-freestyle-jobs" class="tab-content">
+                    <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
+                        <button class="action-btn" onclick="showCreateFreestyleJobModal()" style="background:linear-gradient(135deg,#22d3ee 0%,#0891b2 100%);">
+                            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:16px;height:16px;margin-right:5px;">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+                            </svg>
+                            Create Job
+                        </button>
+                    </div>
+                    <div class="table-container" style="flex:1;overflow:auto;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Description</th>
+                                    <th>Steps</th>
+                                    <th>Last Status</th>
+                                    <th>Last Build</th>
+                                    <th>Triggers</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="freestyle-jobs-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Freestyle Builds Tab -->
+                <div id="cicd-tab-freestyle-builds" class="tab-content">
+                    <div class="table-container" style="flex:1;overflow:auto;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Build #</th>
+                                    <th>Job</th>
+                                    <th>Status</th>
+                                    <th>Trigger</th>
+                                    <th>Steps</th>
+                                    <th>Duration</th>
+                                    <th>Started</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="freestyle-builds-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Notifications Tab -->
+                <div id="cicd-tab-notifications" class="tab-content">
+                    <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
+                        <button class="action-btn" onclick="showCreateNotificationModal()" style="background:linear-gradient(135deg,#22d3ee 0%,#0891b2 100%);">
+                            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:16px;height:16px;margin-right:5px;">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+                            </svg>
+                            New Notification
+                        </button>
+                    </div>
+                    <div class="table-container" style="flex:1;overflow:auto;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Type</th>
+                                    <th>Events</th>
+                                    <th>Scope</th>
+                                    <th>Enabled</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="notifications-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="resize-handle" onmousedown="startResize(event, 'cicd')"></div>
+        </div>
+
+        <!-- CI/CD Log Modal -->
+        <div class="k8s-modal-overlay" id="cicd-log-modal" style="display:none;">
+            <div class="k8s-modal" style="max-width:900px;height:600px;">
+                <div class="k8s-modal-header">
+                    <h3>
+                        <svg fill="none" stroke="#22d3ee" viewBox="0 0 24 24" style="width:20px;height:20px;">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        <span id="cicd-log-title">Job Logs</span>
+                    </h3>
+                    <button class="k8s-modal-close" onclick="closeCicdLogModal()">&times;</button>
+                </div>
+                <div class="k8s-modal-body" style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
+                    <div class="resource-info" style="margin-bottom:10px;">
+                        <div class="resource-info-item">
+                            <span class="label">Run</span>
+                            <span class="value" id="cicd-log-run">-</span>
+                        </div>
+                        <div class="resource-info-item">
+                            <span class="label">Job</span>
+                            <span class="value" id="cicd-log-job">-</span>
+                        </div>
+                        <div class="resource-info-item">
+                            <span class="label">Status</span>
+                            <span class="value" id="cicd-log-status">-</span>
+                        </div>
+                    </div>
+                    <pre id="cicd-log-content" style="flex:1;overflow:auto;background:#0d0d14;padding:15px;border-radius:6px;font-family:'Consolas',monospace;font-size:12px;color:#e0e0e0;white-space:pre-wrap;word-wrap:break-word;margin:0;"></pre>
+                </div>
+                <div class="k8s-modal-footer">
+                    <button class="modal-btn cancel" onclick="closeCicdLogModal()">Close</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- SSH Host Modal -->
+        <div class="k8s-modal-overlay" id="ssh-host-modal" style="display:none;">
+            <div class="k8s-modal" style="max-width:550px;">
+                <div class="k8s-modal-header">
+                    <h3>
+                        <svg fill="none" stroke="#22d3ee" viewBox="0 0 24 24" style="width:20px;height:20px;">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"/>
+                        </svg>
+                        <span id="ssh-host-modal-title">Add SSH Host</span>
+                    </h3>
+                    <button class="k8s-modal-close" onclick="closeSSHHostModal()">&times;</button>
+                </div>
+                <form id="ssh-host-form" onsubmit="saveSSHHost(event)">
+                    <input type="hidden" id="ssh-host-id">
+                    <div class="k8s-modal-body" style="max-height:calc(90vh - 140px);overflow-y:auto;">
+                        <!-- Connection Section -->
+                        <div style="background:rgba(34,211,238,0.05);border:1px solid rgba(34,211,238,0.2);border-radius:8px;padding:16px;margin-bottom:16px;">
+                            <h4 style="color:#22d3ee;margin:0 0 14px 0;font-size:13px;display:flex;align-items:center;gap:8px;">
+                                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:16px;height:16px;"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/></svg>
+                                Connection
+                            </h4>
+                            <div class="form-group" style="margin-bottom:12px;">
+                                <label style="font-size:12px;color:#8a8a9a;margin-bottom:6px;display:block;">Display Name <span style="color:#ef4444;">*</span></label>
+                                <input type="text" id="ssh-host-name" required placeholder="my-server-1" style="width:100%;padding:10px 12px;background:#1a1a2e;border:1px solid #3a3a4e;border-radius:6px;color:#fff;font-size:14px;">
+                            </div>
+                            <div style="display:grid;grid-template-columns:3fr 1fr;gap:12px;">
+                                <div class="form-group" style="margin-bottom:0;">
+                                    <label style="font-size:12px;color:#8a8a9a;margin-bottom:6px;display:block;">Hostname / IP <span style="color:#ef4444;">*</span></label>
+                                    <input type="text" id="ssh-host-host" required placeholder="192.168.1.100" style="width:100%;padding:10px 12px;background:#1a1a2e;border:1px solid #3a3a4e;border-radius:6px;color:#fff;font-size:14px;">
+                                </div>
+                                <div class="form-group" style="margin-bottom:0;">
+                                    <label style="font-size:12px;color:#8a8a9a;margin-bottom:6px;display:block;">Port</label>
+                                    <input type="number" id="ssh-host-port" value="22" min="1" max="65535" style="width:100%;padding:10px 12px;background:#1a1a2e;border:1px solid #3a3a4e;border-radius:6px;color:#fff;font-size:14px;text-align:center;">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Authentication Section -->
+                        <div style="background:rgba(251,191,36,0.05);border:1px solid rgba(251,191,36,0.2);border-radius:8px;padding:16px;margin-bottom:16px;">
+                            <h4 style="color:#fbbf24;margin:0 0 14px 0;font-size:13px;display:flex;align-items:center;gap:8px;">
+                                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:16px;height:16px;"><path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+                                Authentication
+                            </h4>
+                            <div class="form-group" style="margin-bottom:12px;">
+                                <label style="font-size:12px;color:#8a8a9a;margin-bottom:6px;display:block;">Username <span style="color:#ef4444;">*</span></label>
+                                <input type="text" id="ssh-host-user" required placeholder="root" style="width:100%;padding:10px 12px;background:#1a1a2e;border:1px solid #3a3a4e;border-radius:6px;color:#fff;font-size:14px;">
+                            </div>
+                            <div class="form-group" style="margin-bottom:12px;">
+                                <label style="font-size:12px;color:#8a8a9a;margin-bottom:6px;display:block;">Method</label>
+                                <div style="display:flex;gap:8px;">
+                                    <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:10px;background:#1a1a2e;border:2px solid #3a3a4e;border-radius:6px;cursor:pointer;transition:all 0.2s;" onclick="document.getElementById('ssh-host-auth').value='password';updateAuthFields();this.style.borderColor='#fbbf24';this.nextElementSibling.style.borderColor='#3a3a4e';">
+                                        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:16px;height:16px;"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                                        <span style="font-size:13px;color:#e0e0e0;">Password</span>
+                                    </label>
+                                    <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:10px;background:#1a1a2e;border:2px solid #3a3a4e;border-radius:6px;cursor:pointer;transition:all 0.2s;" onclick="document.getElementById('ssh-host-auth').value='key';updateAuthFields();this.style.borderColor='#fbbf24';this.previousElementSibling.style.borderColor='#3a3a4e';">
+                                        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:16px;height:16px;"><path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+                                        <span style="font-size:13px;color:#e0e0e0;">SSH Key</span>
+                                    </label>
+                                </div>
+                                <select id="ssh-host-auth" onchange="updateAuthFields()" style="display:none;">
+                                    <option value="password">Password</option>
+                                    <option value="key">SSH Key</option>
+                                </select>
+                            </div>
+                            <div id="ssh-password-group" class="form-group" style="margin-bottom:0;">
+                                <label style="font-size:12px;color:#8a8a9a;margin-bottom:6px;display:block;">Password</label>
+                                <input type="password" id="ssh-host-password" placeholder="Enter password" style="width:100%;padding:10px 12px;background:#1a1a2e;border:1px solid #3a3a4e;border-radius:6px;color:#fff;font-size:14px;">
+                            </div>
+                            <div id="ssh-key-group" style="display:none;">
+                                <div class="form-group" style="margin-bottom:12px;">
+                                    <label style="font-size:12px;color:#8a8a9a;margin-bottom:6px;display:block;">Private Key</label>
+                                    <textarea id="ssh-host-key" rows="5" placeholder="-----BEGIN OPENSSH PRIVATE KEY-----&#10;...&#10;-----END OPENSSH PRIVATE KEY-----" style="width:100%;padding:10px 12px;background:#1a1a2e;border:1px solid #3a3a4e;border-radius:6px;color:#fff;font-family:'Consolas',monospace;font-size:11px;resize:vertical;"></textarea>
+                                </div>
+                                <div class="form-group" style="margin-bottom:0;">
+                                    <label style="font-size:12px;color:#8a8a9a;margin-bottom:6px;display:block;">Passphrase (optional)</label>
+                                    <input type="password" id="ssh-host-passphrase" placeholder="If key is encrypted" style="width:100%;padding:10px 12px;background:#1a1a2e;border:1px solid #3a3a4e;border-radius:6px;color:#fff;font-size:14px;">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Organization Section -->
+                        <div style="background:rgba(139,92,246,0.05);border:1px solid rgba(139,92,246,0.2);border-radius:8px;padding:16px;">
+                            <h4 style="color:#8b5cf6;margin:0 0 14px 0;font-size:13px;display:flex;align-items:center;gap:8px;">
+                                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:16px;height:16px;"><path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+                                Organization
+                            </h4>
+                            <div class="form-group" style="margin-bottom:12px;">
+                                <label style="font-size:12px;color:#8a8a9a;margin-bottom:6px;display:block;">Groups</label>
+                                <input type="text" id="ssh-host-groups" placeholder="web, database, api" style="width:100%;padding:10px 12px;background:#1a1a2e;border:1px solid #3a3a4e;border-radius:6px;color:#fff;font-size:14px;">
+                                <small style="color:#6a6a7a;font-size:11px;margin-top:4px;display:block;">Comma-separated tags for organizing hosts</small>
+                            </div>
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label style="font-size:12px;color:#8a8a9a;margin-bottom:6px;display:block;">Description</label>
+                                <input type="text" id="ssh-host-desc" placeholder="Optional notes about this host" style="width:100%;padding:10px 12px;background:#1a1a2e;border:1px solid #3a3a4e;border-radius:6px;color:#fff;font-size:14px;">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="k8s-modal-footer">
+                        <button type="button" class="modal-btn cancel" onclick="closeSSHHostModal()">Cancel</button>
+                        <button type="submit" class="modal-btn apply" style="background:linear-gradient(135deg,#22d3ee 0%,#0891b2 100%);">
+                            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:16px;height:16px;margin-right:6px;"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                            Save Host
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Git Credential Modal -->
+        <div class="k8s-modal-overlay" id="git-credential-modal" style="display:none;">
+            <div class="k8s-modal" style="max-width:500px;">
+                <div class="k8s-modal-header">
+                    <h3>
+                        <svg fill="none" stroke="#22d3ee" viewBox="0 0 24 24" style="width:20px;height:20px;">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+                        </svg>
+                        <span id="git-credential-modal-title">Add Git Credential</span>
+                    </h3>
+                    <button class="k8s-modal-close" onclick="closeGitCredentialModal()">&times;</button>
+                </div>
+                <form id="git-credential-form" onsubmit="saveGitCredential(event)">
+                    <input type="hidden" id="git-credential-id">
+                    <div class="k8s-modal-body" style="max-height:calc(90vh - 140px);overflow-y:auto;">
+                        <!-- Basic Info Section -->
+                        <div style="background:rgba(34,211,238,0.05);border:1px solid rgba(34,211,238,0.2);border-radius:8px;padding:16px;margin-bottom:16px;">
+                            <h4 style="color:#22d3ee;margin:0 0 14px 0;font-size:13px;display:flex;align-items:center;gap:8px;">
+                                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:16px;height:16px;"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                Basic Info
+                            </h4>
+                            <div class="form-group" style="margin-bottom:12px;">
+                                <label style="font-size:12px;color:#8a8a9a;margin-bottom:6px;display:block;">Name <span style="color:#ef4444;">*</span></label>
+                                <input type="text" id="git-credential-name" required placeholder="my-github-token" style="width:100%;padding:10px 12px;background:#1a1a2e;border:1px solid #3a3a4e;border-radius:6px;color:#fff;font-size:14px;">
+                            </div>
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label style="font-size:12px;color:#8a8a9a;margin-bottom:6px;display:block;">Description</label>
+                                <input type="text" id="git-credential-desc" placeholder="For accessing private repos" style="width:100%;padding:10px 12px;background:#1a1a2e;border:1px solid #3a3a4e;border-radius:6px;color:#fff;font-size:14px;">
+                            </div>
+                        </div>
+
+                        <!-- Authentication Section -->
+                        <div style="background:rgba(251,191,36,0.05);border:1px solid rgba(251,191,36,0.2);border-radius:8px;padding:16px;">
+                            <h4 style="color:#fbbf24;margin:0 0 14px 0;font-size:13px;display:flex;align-items:center;gap:8px;">
+                                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:16px;height:16px;"><path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+                                Authentication
+                            </h4>
+                            <div class="form-group" style="margin-bottom:12px;">
+                                <label style="font-size:12px;color:#8a8a9a;margin-bottom:6px;display:block;">Auth Type</label>
+                                <select id="git-credential-auth" onchange="updateGitAuthFields()" style="width:100%;padding:10px 12px;background:#1a1a2e;border:1px solid #3a3a4e;border-radius:6px;color:#fff;font-size:14px;">
+                                    <option value="token">Personal Access Token</option>
+                                    <option value="password">Username & Password</option>
+                                    <option value="ssh_key">SSH Private Key</option>
+                                </select>
+                            </div>
+
+                            <!-- Token Auth -->
+                            <div id="git-token-group" class="form-group" style="margin-bottom:0;">
+                                <label style="font-size:12px;color:#8a8a9a;margin-bottom:6px;display:block;">Token</label>
+                                <input type="password" id="git-credential-token" placeholder="ghp_xxxxxxxxxxxx" style="width:100%;padding:10px 12px;background:#1a1a2e;border:1px solid #3a3a4e;border-radius:6px;color:#fff;font-size:14px;">
+                                <small style="color:#6a6a7a;font-size:11px;margin-top:4px;display:block;">GitHub PAT, GitLab token, etc.</small>
+                            </div>
+
+                            <!-- Password Auth -->
+                            <div id="git-password-group" style="display:none;">
+                                <div class="form-group" style="margin-bottom:12px;">
+                                    <label style="font-size:12px;color:#8a8a9a;margin-bottom:6px;display:block;">Username</label>
+                                    <input type="text" id="git-credential-username" placeholder="git username" style="width:100%;padding:10px 12px;background:#1a1a2e;border:1px solid #3a3a4e;border-radius:6px;color:#fff;font-size:14px;">
+                                </div>
+                                <div class="form-group" style="margin-bottom:0;">
+                                    <label style="font-size:12px;color:#8a8a9a;margin-bottom:6px;display:block;">Password</label>
+                                    <input type="password" id="git-credential-password" placeholder="password or token" style="width:100%;padding:10px 12px;background:#1a1a2e;border:1px solid #3a3a4e;border-radius:6px;color:#fff;font-size:14px;">
+                                </div>
+                            </div>
+
+                            <!-- SSH Key Auth -->
+                            <div id="git-key-group" style="display:none;">
+                                <div class="form-group" style="margin-bottom:12px;">
+                                    <label style="font-size:12px;color:#8a8a9a;margin-bottom:6px;display:block;">Private Key</label>
+                                    <textarea id="git-credential-key" rows="5" placeholder="-----BEGIN OPENSSH PRIVATE KEY-----&#10;...&#10;-----END OPENSSH PRIVATE KEY-----" style="width:100%;padding:10px 12px;background:#1a1a2e;border:1px solid #3a3a4e;border-radius:6px;color:#fff;font-family:'Consolas',monospace;font-size:11px;resize:vertical;"></textarea>
+                                </div>
+                                <div class="form-group" style="margin-bottom:0;">
+                                    <label style="font-size:12px;color:#8a8a9a;margin-bottom:6px;display:block;">Passphrase (optional)</label>
+                                    <input type="password" id="git-credential-passphrase" placeholder="If key is encrypted" style="width:100%;padding:10px 12px;background:#1a1a2e;border:1px solid #3a3a4e;border-radius:6px;color:#fff;font-size:14px;">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="k8s-modal-footer">
+                        <button type="button" class="modal-btn cancel" onclick="closeGitCredentialModal()">Cancel</button>
+                        <button type="submit" class="modal-btn apply" style="background:linear-gradient(135deg,#22d3ee 0%,#0891b2 100%);">
+                            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:16px;height:16px;margin-right:6px;"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                            Save Credential
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Freestyle Job Modal -->
+        <div class="k8s-modal-overlay" id="freestyle-job-modal" style="display:none;">
+            <div class="k8s-modal" style="max-width:800px;max-height:90vh;">
+                <div class="k8s-modal-header">
+                    <h3>
+                        <svg fill="none" stroke="#22d3ee" viewBox="0 0 24 24" style="width:20px;height:20px;">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
+                        </svg>
+                        <span id="freestyle-job-modal-title">Create Freestyle Job</span>
+                    </h3>
+                    <button class="k8s-modal-close" onclick="closeFreestyleJobModal()">&times;</button>
+                </div>
+                <form id="freestyle-job-form" onsubmit="saveFreestyleJob(event)">
+                    <div class="k8s-modal-body" style="max-height:calc(90vh - 140px);overflow-y:auto;">
+                        <div class="form-group">
+                            <label>Job Name *</label>
+                            <input type="text" id="freestyle-job-name" required placeholder="my-build-job">
+                        </div>
+                        <div class="form-group">
+                            <label>Description</label>
+                            <input type="text" id="freestyle-job-desc" placeholder="Brief description of what this job does">
+                        </div>
+                        <div class="form-group">
+                            <label style="display:flex;align-items:center;gap:8px;">
+                                <input type="checkbox" id="freestyle-job-enabled" checked style="width:auto;">
+                                Enabled
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label>Environment Variables</label>
+                            <textarea id="freestyle-job-env" rows="3" placeholder="KEY=value&#10;ANOTHER_KEY=another_value" style="font-family:monospace;font-size:12px;"></textarea>
+                        </div>
+                        <div style="border-top:1px solid rgba(255,255,255,0.1);padding-top:15px;margin-top:15px;">
+                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                                <label style="font-weight:600;color:#e0e0e0;">Build Steps</label>
+                                <button type="button" class="action-btn" onclick="addBuildStep()" style="padding:6px 12px;font-size:12px;background:rgba(34,211,238,0.2);border:1px solid rgba(34,211,238,0.3);color:#22d3ee;">
+                                    + Add Step
+                                </button>
+                            </div>
+                            <div id="build-steps-list" style="max-height:300px;overflow-y:auto;"></div>
+                        </div>
+                        <div style="border-top:1px solid rgba(255,255,255,0.1);padding-top:15px;margin-top:15px;">
+                            <label style="font-weight:600;color:#e0e0e0;margin-bottom:10px;display:block;">Triggers</label>
+                            <div class="form-group">
+                                <label style="display:flex;align-items:center;gap:8px;">
+                                    <input type="checkbox" id="freestyle-job-webhook" style="width:auto;">
+                                    Enable Webhook Trigger
+                                </label>
+                            </div>
+                            <div class="form-group">
+                                <label>Cron Schedule (optional)</label>
+                                <input type="text" id="freestyle-job-cron" placeholder="0 2 * * * (runs daily at 2 AM)">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="k8s-modal-footer">
+                        <button type="button" class="modal-btn cancel" onclick="closeFreestyleJobModal()">Cancel</button>
+                        <button type="button" class="modal-btn apply" onclick="saveFreestyleJob(event)" style="background:linear-gradient(135deg,#22d3ee 0%,#0891b2 100%);">
+                            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:16px;height:16px;margin-right:6px;"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                            Save Job
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Freestyle Build Console Modal -->
+        <div class="k8s-modal-overlay" id="freestyle-build-modal" style="display:none;">
+            <div class="k8s-modal" style="max-width:1000px;height:700px;">
+                <div class="k8s-modal-header">
+                    <h3>
+                        <svg fill="none" stroke="#22d3ee" viewBox="0 0 24 24" style="width:20px;height:20px;">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                        </svg>
+                        <span id="freestyle-build-title">Build Console</span>
+                    </h3>
+                    <button class="k8s-modal-close" onclick="closeBuildConsole()">&times;</button>
+                </div>
+                <div class="k8s-modal-body" style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
+                    <div class="resource-info" style="margin-bottom:10px;">
+                        <div class="resource-info-item">
+                            <span class="label">Status</span>
+                            <span class="value" id="freestyle-build-status">-</span>
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:15px;flex:1;overflow:hidden;">
+                        <div style="width:200px;overflow-y:auto;" id="freestyle-build-steps">
+                            <!-- Steps will be rendered here -->
+                        </div>
+                        <pre id="freestyle-build-content" style="flex:1;overflow:auto;background:#0d0d14;padding:15px;border-radius:6px;font-family:'Consolas',monospace;font-size:12px;color:#e0e0e0;white-space:pre-wrap;word-wrap:break-word;margin:0;"></pre>
+                    </div>
+                </div>
+                <div class="k8s-modal-footer">
+                    <button class="modal-btn cancel" onclick="closeBuildConsole()">Close</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notification Config Modal -->
+        <div class="k8s-modal-overlay" id="notification-modal" style="display:none;">
+            <div class="k8s-modal" style="max-width:600px;max-height:90vh;">
+                <div class="k8s-modal-header">
+                    <h3>
+                        <svg fill="none" stroke="#22d3ee" viewBox="0 0 24 24" style="width:20px;height:20px;">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                        </svg>
+                        <span id="notification-modal-title">Create Notification</span>
+                    </h3>
+                    <button class="k8s-modal-close" onclick="closeNotificationModal()">&times;</button>
+                </div>
+                <form id="notification-form" onsubmit="saveNotification(event)">
+                    <input type="hidden" id="notification-id">
+                    <div class="k8s-modal-body" id="notification-modal-body" style="max-height:calc(90vh - 140px);overflow-y:auto;">
+                        <!-- Content rendered by JavaScript -->
+                    </div>
+                    <div class="k8s-modal-footer">
+                        <button type="button" class="modal-btn cancel" onclick="closeNotificationModal()">Cancel</button>
+                        <button type="submit" class="modal-btn confirm">Save</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Monitoring Window -->
+        <div id="window-monitoring" class="window" style="width:1000px;height:700px;left:160px;top:50px;">
+            <div class="window-header" onmousedown="startDrag(event, 'monitoring')">
+                <div class="window-title">
+                    <svg fill="none" stroke="#10b981" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                    </svg>
+                    Resource Monitoring
+                </div>
+                <div class="window-controls">
+                    <button class="window-btn minimize" onclick="minimizeWindow('monitoring')" title="Minimize">
+                        <svg fill="currentColor" viewBox="0 0 24 24"><path d="M19 13H5v-2h14v2z"/></svg>
+                    </button>
+                    <button class="window-btn maximize" onclick="maximizeWindow('monitoring')" title="Maximize" id="max-btn-monitoring">
+                        <svg class="max-icon" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
+                        <svg class="restore-icon" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><rect x="6" y="6" width="11" height="11" rx="1"/><path d="M9 6V5a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2h-1"/></svg>
+                    </button>
+                    <button class="window-btn close" onclick="closeWindow('monitoring')" title="Close">
+                        <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M6 6l12 12M6 18L18 6"/></svg>
+                    </button>
+                </div>
+            </div>
+            <div class="tab-bar">
+                <button class="tab-btn active" onclick="showMonitoringTab('overview')">Overview</button>
+                <button class="tab-btn" onclick="showMonitoringTab('nodes')">Nodes</button>
+                <button class="tab-btn" onclick="showMonitoringTab('pods')">Pods</button>
+                <button class="tab-btn" onclick="showMonitoringTab('quotas')">Quotas</button>
+                <button class="tab-btn" onclick="showMonitoringTab('hpa')">HPA</button>
+            </div>
+            <div class="window-content" style="display:flex;flex-direction:column;padding:15px;">
+                <!-- Overview Tab -->
+                <div id="monitoring-tab-overview" class="tab-content active">
+                    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:15px;margin-bottom:20px;">
+                        <div class="stat-card" style="background:#2a2a3e;border-radius:8px;padding:20px;text-align:center;">
+                            <div style="font-size:32px;font-weight:bold;color:#10b981;" id="mon-stat-nodes">0/0</div>
+                            <div style="color:#8a8a9a;font-size:13px;margin-top:5px;">Nodes Ready</div>
+                        </div>
+                        <div class="stat-card" style="background:#2a2a3e;border-radius:8px;padding:20px;text-align:center;">
+                            <div style="font-size:32px;font-weight:bold;color:#667eea;" id="mon-stat-pods">0/0</div>
+                            <div style="color:#8a8a9a;font-size:13px;margin-top:5px;">Pods Running</div>
+                        </div>
+                        <div class="stat-card" style="background:#2a2a3e;border-radius:8px;padding:20px;text-align:center;">
+                            <div style="font-size:32px;font-weight:bold;color:#f59e0b;" id="mon-stat-cpu">0%</div>
+                            <div style="color:#8a8a9a;font-size:13px;margin-top:5px;">CPU Usage</div>
+                        </div>
+                        <div class="stat-card" style="background:#2a2a3e;border-radius:8px;padding:20px;text-align:center;">
+                            <div style="font-size:32px;font-weight:bold;color:#8b5cf6;" id="mon-stat-mem">0%</div>
+                            <div style="color:#8a8a9a;font-size:13px;margin-top:5px;">Memory Usage</div>
+                        </div>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;flex:1;">
+                        <div style="background:#2a2a3e;border-radius:8px;padding:15px;">
+                            <h4 style="color:#e0e0e0;margin-bottom:15px;font-size:14px;">CPU Usage</h4>
+                            <div style="display:flex;align-items:center;gap:15px;">
+                                <div style="flex:1;background:#1e1e2e;border-radius:10px;height:24px;overflow:hidden;">
+                                    <div id="mon-cpu-bar" style="height:100%;background:linear-gradient(90deg,#4ade80,#22c55e);width:0%;transition:width 0.5s;"></div>
+                                </div>
+                                <span id="mon-cpu-text" style="color:#e0e0e0;font-size:14px;min-width:80px;">0 / 0 cores</span>
+                            </div>
+                        </div>
+                        <div style="background:#2a2a3e;border-radius:8px;padding:15px;">
+                            <h4 style="color:#e0e0e0;margin-bottom:15px;font-size:14px;">Memory Usage</h4>
+                            <div style="display:flex;align-items:center;gap:15px;">
+                                <div style="flex:1;background:#1e1e2e;border-radius:10px;height:24px;overflow:hidden;">
+                                    <div id="mon-mem-bar" style="height:100%;background:linear-gradient(90deg,#667eea,#764ba2);width:0%;transition:width 0.5s;"></div>
+                                </div>
+                                <span id="mon-mem-text" style="color:#e0e0e0;font-size:14px;min-width:80px;">0 / 0 GB</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="mon-metrics-notice" style="margin-top:15px;padding:10px;background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.3);border-radius:6px;color:#fbbf24;font-size:13px;display:none;">
+                        <strong>Note:</strong> Metrics server not available. Install metrics-server for real-time CPU/Memory data.
+                    </div>
+                </div>
+
+                <!-- Nodes Tab -->
+                <div id="monitoring-tab-nodes" class="tab-content">
+                    <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
+                        <button class="action-btn" onclick="loadMonitoringNodes()" style="background:rgba(16,185,129,0.2);border:1px solid rgba(16,185,129,0.3);color:#10b981;">
+                            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:14px;height:14px;margin-right:5px;">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                            </svg>
+                            Refresh
+                        </button>
+                    </div>
+                    <div class="table-container" style="flex:1;overflow:auto;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Node</th>
+                                    <th>Roles</th>
+                                    <th>CPU</th>
+                                    <th>Memory</th>
+                                    <th>Pods</th>
+                                    <th>Conditions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="mon-nodes-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Pods Tab -->
+                <div id="monitoring-tab-pods" class="tab-content">
+                    <div style="display:flex;justify-content:space-between;margin-bottom:10px;align-items:center;">
+                        <div style="display:flex;gap:10px;align-items:center;">
+                            <select id="mon-pods-ns" onchange="loadMonitoringPods()" style="background:#2a2a3e;color:#e0e0e0;border:1px solid #3a3a4e;border-radius:6px;padding:8px 12px;font-size:13px;">
+                                <option value="">All Namespaces</option>
+                            </select>
+                        </div>
+                        <button class="action-btn" onclick="loadMonitoringPods()" style="background:rgba(16,185,129,0.2);border:1px solid rgba(16,185,129,0.3);color:#10b981;">
+                            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:14px;height:14px;margin-right:5px;">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                            </svg>
+                            Refresh
+                        </button>
+                    </div>
+                    <div class="table-container" style="flex:1;overflow:auto;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Pod</th>
+                                    <th>Namespace</th>
+                                    <th>CPU</th>
+                                    <th>Memory</th>
+                                    <th>Node</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="mon-pods-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Quotas Tab -->
+                <div id="monitoring-tab-quotas" class="tab-content">
+                    <div style="display:flex;justify-content:space-between;margin-bottom:10px;align-items:center;">
+                        <div style="display:flex;gap:10px;align-items:center;">
+                            <select id="mon-quotas-ns" onchange="loadMonitoringQuotas()" style="background:#2a2a3e;color:#e0e0e0;border:1px solid #3a3a4e;border-radius:6px;padding:8px 12px;font-size:13px;">
+                                <option value="">All Namespaces</option>
+                            </select>
+                        </div>
+                        <button class="action-btn" onclick="loadMonitoringQuotas()" style="background:rgba(16,185,129,0.2);border:1px solid rgba(16,185,129,0.3);color:#10b981;">
+                            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:14px;height:14px;margin-right:5px;">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                            </svg>
+                            Refresh
+                        </button>
+                    </div>
+                    <div id="mon-quotas-container" style="flex:1;overflow:auto;">
+                        <div id="mon-quotas-empty" style="text-align:center;color:#8a8a9a;padding:40px;">
+                            No resource quotas found
+                        </div>
+                    </div>
+                </div>
+
+                <!-- HPA Tab -->
+                <div id="monitoring-tab-hpa" class="tab-content">
+                    <div style="display:flex;justify-content:space-between;margin-bottom:10px;align-items:center;">
+                        <div style="display:flex;gap:10px;align-items:center;">
+                            <select id="mon-hpa-ns" onchange="loadMonitoringHPA()" style="background:#2a2a3e;color:#e0e0e0;border:1px solid #3a3a4e;border-radius:6px;padding:8px 12px;font-size:13px;">
+                                <option value="">All Namespaces</option>
+                            </select>
+                        </div>
+                        <button class="action-btn" onclick="loadMonitoringHPA()" style="background:rgba(16,185,129,0.2);border:1px solid rgba(16,185,129,0.3);color:#10b981;">
+                            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:14px;height:14px;margin-right:5px;">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                            </svg>
+                            Refresh
+                        </button>
+                    </div>
+                    <div class="table-container" style="flex:1;overflow:auto;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Namespace</th>
+                                    <th>Target</th>
+                                    <th>Min/Max</th>
+                                    <th>Current</th>
+                                    <th>CPU</th>
+                                    <th>Age</th>
+                                </tr>
+                            </thead>
+                            <tbody id="mon-hpa-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+            <div class="resize-handle" onmousedown="startResize(event, 'monitoring')"></div>
+        </div>
+
+        <!-- Dev Tools Window -->
+        <div id="window-devtools" class="window" style="width:900px;height:650px;left:140px;top:40px;">
+            <div class="window-header" onmousedown="startDrag(event, 'devtools')">
+                <div class="window-title">
+                    <svg fill="none" stroke="#f97316" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                    Dev Tools
+                </div>
+                <div class="window-controls">
+                    <button class="window-btn minimize" onclick="minimizeWindow('devtools')" title="Minimize">
+                        <svg fill="currentColor" viewBox="0 0 24 24"><path d="M19 13H5v-2h14v2z"/></svg>
+                    </button>
+                    <button class="window-btn maximize" onclick="maximizeWindow('devtools')" title="Maximize" id="max-btn-devtools">
+                        <svg class="max-icon" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
+                        <svg class="restore-icon" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><rect x="6" y="6" width="11" height="11" rx="1"/><path d="M9 6V5a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2h-1"/></svg>
+                    </button>
+                    <button class="window-btn close" onclick="closeWindow('devtools')" title="Close">
+                        <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M6 6l12 12M6 18L18 6"/></svg>
+                    </button>
+                </div>
+            </div>
+            <div class="tab-bar">
+                <button class="tab-btn active" onclick="showDevToolsTab('base64')">Base64</button>
+                <button class="tab-btn" onclick="showDevToolsTab('k8ssecret')">K8s Secrets</button>
+                <button class="tab-btn" onclick="showDevToolsTab('hash')">Hash</button>
+                <button class="tab-btn" onclick="showDevToolsTab('cert')">Certificates</button>
+                <button class="tab-btn" onclick="showDevToolsTab('ssh')">SSH Keys</button>
+                <button class="tab-btn" onclick="showDevToolsTab('convert')">Convert</button>
+                <button class="tab-btn" onclick="showDevToolsTab('diff')">Diff</button>
+            </div>
+            <div class="window-content" style="display:flex;flex-direction:column;padding:15px;">
+                <!-- Base64 Tab -->
+                <div id="devtools-tab-base64" class="tab-content active">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;height:100%;">
+                        <div style="display:flex;flex-direction:column;">
+                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                                <h4 style="color:#e0e0e0;font-size:14px;">Input</h4>
+                                <div style="display:flex;gap:10px;align-items:center;">
+                                    <label style="color:#8a8a9a;font-size:12px;display:flex;align-items:center;gap:5px;">
+                                        <input type="checkbox" id="base64-urlsafe"> URL-safe
+                                    </label>
+                                </div>
+                            </div>
+                            <textarea id="base64-input" placeholder="Enter text to encode or Base64 to decode..." style="flex:1;resize:none;background:#0d0d14;color:#e0e0e0;border:1px solid #3a3a4e;border-radius:6px;padding:12px;font-family:'Consolas',monospace;font-size:13px;"></textarea>
+                            <div style="display:flex;gap:10px;margin-top:10px;">
+                                <button class="action-btn" onclick="doBase64Encode()" style="flex:1;background:linear-gradient(135deg,#f97316 0%,#ea580c 100%);">Encode</button>
+                                <button class="action-btn" onclick="doBase64Decode()" style="flex:1;background:rgba(249,115,22,0.2);border:1px solid rgba(249,115,22,0.3);color:#f97316;">Decode</button>
+                            </div>
+                        </div>
+                        <div style="display:flex;flex-direction:column;">
+                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                                <h4 style="color:#e0e0e0;font-size:14px;">Output</h4>
+                                <button class="action-btn" onclick="copyToClipboard('base64-output')" style="padding:4px 10px;font-size:12px;background:rgba(255,255,255,0.1);">Copy</button>
+                            </div>
+                            <textarea id="base64-output" readonly placeholder="Result will appear here..." style="flex:1;resize:none;background:#0d0d14;color:#4ade80;border:1px solid #3a3a4e;border-radius:6px;padding:12px;font-family:'Consolas',monospace;font-size:13px;"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- K8s Secrets Tab -->
+                <div id="devtools-tab-k8ssecret" class="tab-content">
+                    <h4 style="color:#e0e0e0;font-size:14px;margin-bottom:8px;">Kubernetes Secret Decoder</h4>
+                    <p style="color:#8a8a9a;font-size:12px;margin-bottom:12px;">Paste Kubernetes secret YAML or JSON to decode all base64 values. Supports <code style="color:#a78bfa;background:#0d0d14;padding:2px 4px;border-radius:3px;">kubectl get secret -o yaml</code>, <code style="color:#a78bfa;background:#0d0d14;padding:2px 4px;border-radius:3px;">-o json</code>, and raw data objects.</p>
+                    <textarea id="k8s-secret-input" placeholder="apiVersion: v1
+kind: Secret
+metadata:
+  name: my-secret
+data:
+  username: YWRtaW4=
+  password: cGFzc3dvcmQxMjM=" style="width:100%;height:150px;resize:none;background:#0d0d14;color:#e0e0e0;border:1px solid #3a3a4e;border-radius:6px;padding:12px;font-family:'Consolas',monospace;font-size:13px;margin-bottom:12px;"></textarea>
+                    <button class="action-btn" onclick="decodeK8sSecret()" style="background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);margin-bottom:12px;">Decode Secret</button>
+                    <pre id="k8s-secret-output" style="background:#0d0d14;padding:15px;border-radius:6px;color:#4ade80;font-size:13px;max-height:300px;overflow:auto;display:none;font-family:'Consolas',monospace;"></pre>
+                </div>
+
+                <!-- Hash Tab -->
+                <div id="devtools-tab-hash" class="tab-content">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+                        <div>
+                            <h4 style="color:#e0e0e0;font-size:14px;margin-bottom:10px;">Generate Hash</h4>
+                            <textarea id="hash-input" placeholder="Enter text to hash..." style="width:100%;height:120px;resize:none;background:#0d0d14;color:#e0e0e0;border:1px solid #3a3a4e;border-radius:6px;padding:12px;font-family:'Consolas',monospace;font-size:13px;margin-bottom:10px;"></textarea>
+                            <button class="action-btn" onclick="generateHashes()" style="width:100%;background:linear-gradient(135deg,#f97316 0%,#ea580c 100%);">Generate All Hashes</button>
+                            <div id="hash-results" style="margin-top:15px;display:grid;gap:10px;">
+                                <div onclick="copyHashValue('hash-md5')" style="background:#0d0d14;padding:10px;border-radius:6px;cursor:pointer;transition:background 0.2s;" onmouseover="this.style.background='#1a1a2e'" onmouseout="this.style.background='#0d0d14'">
+                                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;"><span style="color:#8a8a9a;font-size:11px;">MD5</span><span style="color:#6a6a7a;font-size:10px;">click to copy</span></div>
+                                    <div id="hash-md5" style="color:#4ade80;font-family:'Consolas',monospace;font-size:12px;word-break:break-all;">-</div>
+                                </div>
+                                <div onclick="copyHashValue('hash-sha1')" style="background:#0d0d14;padding:10px;border-radius:6px;cursor:pointer;transition:background 0.2s;" onmouseover="this.style.background='#1a1a2e'" onmouseout="this.style.background='#0d0d14'">
+                                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;"><span style="color:#8a8a9a;font-size:11px;">SHA-1</span><span style="color:#6a6a7a;font-size:10px;">click to copy</span></div>
+                                    <div id="hash-sha1" style="color:#4ade80;font-family:'Consolas',monospace;font-size:12px;word-break:break-all;">-</div>
+                                </div>
+                                <div onclick="copyHashValue('hash-sha256')" style="background:#0d0d14;padding:10px;border-radius:6px;cursor:pointer;transition:background 0.2s;" onmouseover="this.style.background='#1a1a2e'" onmouseout="this.style.background='#0d0d14'">
+                                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;"><span style="color:#8a8a9a;font-size:11px;">SHA-256</span><span style="color:#6a6a7a;font-size:10px;">click to copy</span></div>
+                                    <div id="hash-sha256" style="color:#4ade80;font-family:'Consolas',monospace;font-size:12px;word-break:break-all;">-</div>
+                                </div>
+                                <div onclick="copyHashValue('hash-sha512')" style="background:#0d0d14;padding:10px;border-radius:6px;cursor:pointer;transition:background 0.2s;" onmouseover="this.style.background='#1a1a2e'" onmouseout="this.style.background='#0d0d14'">
+                                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;"><span style="color:#8a8a9a;font-size:11px;">SHA-512</span><span style="color:#6a6a7a;font-size:10px;">click to copy</span></div>
+                                    <div id="hash-sha512" style="color:#4ade80;font-family:'Consolas',monospace;font-size:12px;word-break:break-all;">-</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 style="color:#e0e0e0;font-size:14px;margin-bottom:10px;">Compare Hashes</h4>
+                            <input type="text" id="hash-compare1" placeholder="First hash..." style="width:100%;background:#0d0d14;color:#e0e0e0;border:1px solid #3a3a4e;border-radius:6px;padding:10px;font-family:'Consolas',monospace;font-size:12px;margin-bottom:10px;">
+                            <input type="text" id="hash-compare2" placeholder="Second hash..." style="width:100%;background:#0d0d14;color:#e0e0e0;border:1px solid #3a3a4e;border-radius:6px;padding:10px;font-family:'Consolas',monospace;font-size:12px;margin-bottom:10px;">
+                            <button class="action-btn" onclick="compareHashes()" style="width:100%;background:rgba(249,115,22,0.2);border:1px solid rgba(249,115,22,0.3);color:#f97316;">Compare</button>
+                            <div id="hash-compare-result" style="margin-top:15px;padding:15px;border-radius:6px;text-align:center;display:none;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Certificates Tab -->
+                <div id="devtools-tab-cert" class="tab-content">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;height:100%;">
+                        <div style="display:flex;flex-direction:column;">
+                            <h4 style="color:#e0e0e0;font-size:14px;margin-bottom:10px;">Check Remote Certificate</h4>
+                            <div style="display:flex;gap:10px;margin-bottom:10px;">
+                                <input type="text" id="cert-host" placeholder="example.com" style="flex:1;background:#0d0d14;color:#e0e0e0;border:1px solid #3a3a4e;border-radius:6px;padding:10px;font-size:13px;">
+                                <input type="number" id="cert-port" placeholder="443" value="443" style="width:80px;background:#0d0d14;color:#e0e0e0;border:1px solid #3a3a4e;border-radius:6px;padding:10px;font-size:13px;">
+                                <button class="action-btn" onclick="checkCertificate()" style="background:linear-gradient(135deg,#f97316 0%,#ea580c 100%);">Check</button>
+                            </div>
+                            <h4 style="color:#e0e0e0;font-size:14px;margin:15px 0 10px;">Or Parse PEM Certificate</h4>
+                            <textarea id="cert-pem" placeholder="Paste PEM certificate here..." style="flex:1;resize:none;background:#0d0d14;color:#e0e0e0;border:1px solid #3a3a4e;border-radius:6px;padding:12px;font-family:'Consolas',monospace;font-size:12px;"></textarea>
+                            <button class="action-btn" onclick="parseCertificate()" style="margin-top:10px;background:rgba(249,115,22,0.2);border:1px solid rgba(249,115,22,0.3);color:#f97316;">Parse PEM</button>
+                        </div>
+                        <div style="display:flex;flex-direction:column;">
+                            <h4 style="color:#e0e0e0;font-size:14px;margin-bottom:10px;">Certificate Details</h4>
+                            <div id="cert-result" style="flex:1;overflow:auto;background:#0d0d14;border-radius:6px;padding:15px;">
+                                <p style="color:#8a8a9a;text-align:center;">Enter a hostname or paste a PEM certificate to view details</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SSH Keys Tab -->
+                <div id="devtools-tab-ssh" class="tab-content">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;height:100%;">
+                        <div style="display:flex;flex-direction:column;">
+                            <h4 style="color:#e0e0e0;font-size:14px;margin-bottom:10px;">Generate SSH Key Pair</h4>
+                            <div style="display:flex;gap:10px;margin-bottom:10px;">
+                                <select id="ssh-algorithm" style="flex:1;background:#0d0d14;color:#e0e0e0;border:1px solid #3a3a4e;border-radius:6px;padding:10px;font-size:13px;">
+                                    <option value="ED25519">Ed25519 (Recommended)</option>
+                                    <option value="RSA">RSA</option>
+                                    <option value="ECDSA">ECDSA</option>
+                                </select>
+                                <select id="ssh-bitsize" style="width:120px;background:#0d0d14;color:#e0e0e0;border:1px solid #3a3a4e;border-radius:6px;padding:10px;font-size:13px;">
+                                    <option value="0">Default</option>
+                                    <option value="2048">2048 bits</option>
+                                    <option value="4096">4096 bits</option>
+                                </select>
+                                <button class="action-btn" onclick="generateSSHKey()" style="background:linear-gradient(135deg,#f97316 0%,#ea580c 100%);">Generate</button>
+                            </div>
+                            <h4 style="color:#e0e0e0;font-size:14px;margin:15px 0 10px;">Private Key</h4>
+                            <textarea id="ssh-private" readonly placeholder="Generated private key..." style="flex:1;resize:none;background:#0d0d14;color:#e0e0e0;border:1px solid #3a3a4e;border-radius:6px;padding:12px;font-family:'Consolas',monospace;font-size:11px;"></textarea>
+                            <button class="action-btn" onclick="copyToClipboard('ssh-private')" style="margin-top:5px;padding:6px;font-size:12px;background:rgba(255,255,255,0.1);">Copy Private Key</button>
+                        </div>
+                        <div style="display:flex;flex-direction:column;">
+                            <h4 style="color:#e0e0e0;font-size:14px;margin-bottom:10px;">Public Key</h4>
+                            <textarea id="ssh-public" readonly placeholder="Generated public key..." style="height:80px;resize:none;background:#0d0d14;color:#4ade80;border:1px solid #3a3a4e;border-radius:6px;padding:12px;font-family:'Consolas',monospace;font-size:11px;"></textarea>
+                            <button class="action-btn" onclick="copyToClipboard('ssh-public')" style="margin-top:5px;padding:6px;font-size:12px;background:rgba(255,255,255,0.1);">Copy Public Key</button>
+                            <div id="ssh-fingerprint" style="margin-top:10px;padding:10px;background:#2a2a3e;border-radius:6px;">
+                                <span style="color:#8a8a9a;font-size:11px;">Fingerprint</span>
+                                <div style="color:#667eea;font-family:'Consolas',monospace;font-size:11px;word-break:break-all;">-</div>
+                            </div>
+                            <h4 style="color:#e0e0e0;font-size:14px;margin:15px 0 10px;">Validate/Parse Key</h4>
+                            <textarea id="ssh-validate-input" placeholder="Paste SSH key (public or private) to validate..." style="flex:1;resize:none;background:#0d0d14;color:#e0e0e0;border:1px solid #3a3a4e;border-radius:6px;padding:12px;font-family:'Consolas',monospace;font-size:11px;"></textarea>
+                            <button class="action-btn" onclick="validateSSHKey()" style="margin-top:10px;background:rgba(249,115,22,0.2);border:1px solid rgba(249,115,22,0.3);color:#f97316;">Validate Key</button>
+                            <div id="ssh-validate-result" style="margin-top:10px;padding:10px;background:#2a2a3e;border-radius:6px;display:none;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Convert Tab -->
+                <div id="devtools-tab-convert" class="tab-content">
+                    <div style="display:flex;gap:10px;margin-bottom:15px;align-items:center;">
+                        <select id="convert-from" style="background:#0d0d14;color:#e0e0e0;border:1px solid #3a3a4e;border-radius:6px;padding:10px;font-size:13px;">
+                            <option value="json">JSON</option>
+                            <option value="yaml">YAML</option>
+                            <option value="csv">CSV</option>
+                            <option value="xml">XML</option>
+                            <option value="toml">TOML</option>
+                            <option value="properties">Properties</option>
+                        </select>
+                        <svg fill="none" stroke="#8a8a9a" viewBox="0 0 24 24" style="width:24px;height:24px;">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+                        </svg>
+                        <select id="convert-to" style="background:#0d0d14;color:#e0e0e0;border:1px solid #3a3a4e;border-radius:6px;padding:10px;font-size:13px;">
+                            <option value="yaml">YAML</option>
+                            <option value="json">JSON</option>
+                            <option value="toml">TOML</option>
+                        </select>
+                        <button class="action-btn" onclick="convertFormat()" style="background:linear-gradient(135deg,#f97316 0%,#ea580c 100%);">Convert</button>
+                        <button class="action-btn" onclick="formatJSON()" style="background:rgba(74,222,128,0.2);border:1px solid rgba(74,222,128,0.3);color:#4ade80;">Format JSON</button>
+                        <button class="action-btn" onclick="minifyJSON()" style="background:rgba(239,68,68,0.2);border:1px solid rgba(239,68,68,0.3);color:#ef4444;">Minify JSON</button>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;flex:1;">
+                        <div style="display:flex;flex-direction:column;">
+                            <h4 style="color:#e0e0e0;font-size:14px;margin-bottom:10px;">Input</h4>
+                            <textarea id="convert-input" placeholder="Paste your data here..." style="flex:1;resize:none;background:#0d0d14;color:#e0e0e0;border:1px solid #3a3a4e;border-radius:6px;padding:12px;font-family:'Consolas',monospace;font-size:12px;"></textarea>
+                        </div>
+                        <div style="display:flex;flex-direction:column;">
+                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                                <h4 style="color:#e0e0e0;font-size:14px;">Output</h4>
+                                <button class="action-btn" onclick="copyToClipboard('convert-output')" style="padding:4px 10px;font-size:12px;background:rgba(255,255,255,0.1);">Copy</button>
+                            </div>
+                            <textarea id="convert-output" readonly placeholder="Converted output..." style="flex:1;resize:none;background:#0d0d14;color:#4ade80;border:1px solid #3a3a4e;border-radius:6px;padding:12px;font-family:'Consolas',monospace;font-size:12px;"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Diff Tab -->
+                <div id="devtools-tab-diff" class="tab-content">
+                    <div style="display:flex;gap:10px;margin-bottom:15px;align-items:center;">
+                        <select id="diff-type" style="background:#0d0d14;color:#e0e0e0;border:1px solid #3a3a4e;border-radius:6px;padding:10px;font-size:13px;">
+                            <option value="text">Text</option>
+                            <option value="json">JSON</option>
+                            <option value="yaml">YAML</option>
+                        </select>
+                        <button class="action-btn" onclick="computeDiff()" style="background:linear-gradient(135deg,#f97316 0%,#ea580c 100%);">Compare</button>
+                        <span id="diff-stats" style="color:#8a8a9a;font-size:13px;margin-left:auto;"></span>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:15px;">
+                        <div style="display:flex;flex-direction:column;">
+                            <h4 style="color:#e0e0e0;font-size:14px;margin-bottom:10px;">Original</h4>
+                            <textarea id="diff-input1" placeholder="Paste original text..." style="height:200px;resize:none;background:#0d0d14;color:#e0e0e0;border:1px solid #3a3a4e;border-radius:6px;padding:12px;font-family:'Consolas',monospace;font-size:12px;"></textarea>
+                        </div>
+                        <div style="display:flex;flex-direction:column;">
+                            <h4 style="color:#e0e0e0;font-size:14px;margin-bottom:10px;">Modified</h4>
+                            <textarea id="diff-input2" placeholder="Paste modified text..." style="height:200px;resize:none;background:#0d0d14;color:#e0e0e0;border:1px solid #3a3a4e;border-radius:6px;padding:12px;font-family:'Consolas',monospace;font-size:12px;"></textarea>
+                        </div>
+                    </div>
+                    <h4 style="color:#e0e0e0;font-size:14px;margin-bottom:10px;">Diff Output</h4>
+                    <pre id="diff-output" style="flex:1;overflow:auto;background:#0d0d14;border-radius:6px;padding:15px;font-family:'Consolas',monospace;font-size:12px;color:#e0e0e0;margin:0;min-height:150px;"></pre>
+                </div>
+            </div>
+            <div class="resize-handle" onmousedown="startResize(event, 'devtools')"></div>
+        </div>
+
+        <!-- PostgreSQL Window -->
+        <div id="window-postgres" class="window" style="width:950px;height:700px;left:120px;top:30px;">
+            <div class="window-header" onmousedown="startDrag(event, 'postgres')">
+                <div class="window-title">
+                    <svg fill="none" stroke="#336791" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"></path>
+                    </svg>
+                    PostgreSQL
+                </div>
+                <div class="window-controls">
+                    <button class="window-btn minimize" onclick="minimizeWindow('postgres')">&#x2212;</button>
+                    <button class="window-btn maximize" onclick="maximizeWindow('postgres')" id="max-btn-postgres">&#x25A1;</button>
+                    <button class="window-btn close" onclick="closeWindow('postgres')">&times;</button>
+                </div>
+            </div>
+            <div class="window-content" style="display:flex;flex-direction:column;padding:15px;gap:15px;">
+                <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;background:#2a2a3e;padding:12px;border-radius:8px;">
+                    <input type="text" id="pg-host" placeholder="Host" value="localhost" style="width:140px;background:#0d0d14;color:#e0e0e0;border:1px solid #3a3a4e;border-radius:4px;padding:8px;">
+                    <input type="number" id="pg-port" placeholder="Port" value="5432" style="width:70px;background:#0d0d14;color:#e0e0e0;border:1px solid #3a3a4e;border-radius:4px;padding:8px;">
+                    <input type="text" id="pg-user" placeholder="User" value="postgres" style="width:100px;background:#0d0d14;color:#e0e0e0;border:1px solid #3a3a4e;border-radius:4px;padding:8px;">
+                    <input type="password" id="pg-password" placeholder="Password" style="width:100px;background:#0d0d14;color:#e0e0e0;border:1px solid #3a3a4e;border-radius:4px;padding:8px;">
+                    <input type="text" id="pg-database" placeholder="Database" value="postgres" style="width:120px;background:#0d0d14;color:#e0e0e0;border:1px solid #3a3a4e;border-radius:4px;padding:8px;">
+                    <button class="action-btn" onclick="pgConnect()" style="background:linear-gradient(135deg,#336791 0%,#1a3b4d 100%);">Connect</button>
+                    <span id="pg-status" style="color:#8a8a9a;font-size:12px;"></span>
+                </div>
+                <div class="tab-header">
+                    <button class="tab-btn active" onclick="showPgTab('info')">Info</button>
+                    <button class="tab-btn" onclick="showPgTab('query')">Query</button>
+                    <button class="tab-btn" onclick="showPgTab('tables')">Tables</button>
+                    <button class="tab-btn" onclick="showPgTab('dump')">Dump</button>
+                </div>
+                <div id="pg-tab-info" class="tab-content active" style="flex:1;overflow:auto;">
+                    <div id="pg-info-content" style="display:grid;grid-template-columns:repeat(3,1fr);gap:15px;">
+                        <div style="background:#2a2a3e;padding:15px;border-radius:8px;text-align:center;">
+                            <div style="font-size:24px;font-weight:bold;color:#336791;" id="pg-version">-</div>
+                            <div style="color:#8a8a9a;font-size:12px;">Version</div>
+                        </div>
+                        <div style="background:#2a2a3e;padding:15px;border-radius:8px;text-align:center;">
+                            <div style="font-size:24px;font-weight:bold;color:#4ade80;" id="pg-size">-</div>
+                            <div style="color:#8a8a9a;font-size:12px;">Database Size</div>
+                        </div>
+                        <div style="background:#2a2a3e;padding:15px;border-radius:8px;text-align:center;">
+                            <div style="font-size:24px;font-weight:bold;color:#fbbf24;" id="pg-conns">-</div>
+                            <div style="color:#8a8a9a;font-size:12px;">Connections</div>
+                        </div>
+                    </div>
+                </div>
+                <div id="pg-tab-query" class="tab-content" style="flex:1;display:flex;flex-direction:column;gap:10px;">
+                    <textarea id="pg-query" placeholder="SELECT * FROM table_name LIMIT 10;" style="height:100px;background:#0d0d14;color:#e0e0e0;border:1px solid #3a3a4e;border-radius:6px;padding:10px;font-family:'Consolas',monospace;resize:none;"></textarea>
+                    <div style="display:flex;gap:10px;">
+                        <button class="action-btn" onclick="pgExecuteQuery()" style="background:linear-gradient(135deg,#336791 0%,#1a3b4d 100%);">Execute</button>
+                        <label style="display:flex;align-items:center;gap:5px;color:#8a8a9a;"><input type="checkbox" id="pg-readonly" checked> Read-only</label>
+                        <span id="pg-query-status" style="color:#8a8a9a;font-size:12px;margin-left:auto;"></span>
+                    </div>
+                    <div id="pg-query-result" style="flex:1;overflow:auto;background:#0d0d14;border-radius:6px;padding:10px;font-family:'Consolas',monospace;font-size:12px;"></div>
+                </div>
+                <div id="pg-tab-tables" class="tab-content" style="flex:1;overflow:auto;">
+                    <table style="width:100%;"><thead><tr><th>Schema</th><th>Table</th><th>Rows</th><th>Size</th><th>Index Size</th></tr></thead><tbody id="pg-tables-tbody"></tbody></table>
+                </div>
+                <div id="pg-tab-dump" class="tab-content" style="flex:1;display:flex;flex-direction:column;gap:10px;">
+                    <div style="display:flex;gap:15px;align-items:center;">
+                        <label style="color:#e0e0e0;display:flex;align-items:center;gap:5px;"><input type="checkbox" id="pg-dump-schema"> Schema only</label>
+                        <label style="color:#e0e0e0;display:flex;align-items:center;gap:5px;"><input type="checkbox" id="pg-dump-data"> Data only</label>
+                        <input type="text" id="pg-dump-tables" placeholder="Tables (comma-separated)" style="flex:1;background:#0d0d14;color:#e0e0e0;border:1px solid #3a3a4e;border-radius:4px;padding:8px;">
+                        <button class="action-btn" onclick="pgDump()" style="background:linear-gradient(135deg,#336791 0%,#1a3b4d 100%);">Generate Dump</button>
+                    </div>
+                    <textarea id="pg-dump-output" readonly style="flex:1;background:#0d0d14;color:#4ade80;border:1px solid #3a3a4e;border-radius:6px;padding:10px;font-family:'Consolas',monospace;font-size:11px;resize:none;"></textarea>
+                </div>
+            </div>
+            <div class="resize-handle" onmousedown="startResize(event, 'postgres')"></div>
+        </div>
+
+        <!-- Redis Window -->
+        <div id="window-redis" class="window" style="width:950px;height:700px;left:140px;top:40px;">
+            <div class="window-header" onmousedown="startDrag(event, 'redis')">
+                <div class="window-title">
+                    <svg fill="none" stroke="#dc382d" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12l4-4m-4 4l4 4M19 12l-4-4m4 4l-4 4"></path>
+                    </svg>
+                    Redis
+                </div>
+                <div class="window-controls">
+                    <button class="window-btn minimize" onclick="minimizeWindow('redis')">&#x2212;</button>
+                    <button class="window-btn maximize" onclick="maximizeWindow('redis')" id="max-btn-redis">&#x25A1;</button>
+                    <button class="window-btn close" onclick="closeWindow('redis')">&times;</button>
+                </div>
+            </div>
+            <div class="window-content" style="display:flex;flex-direction:column;padding:15px;gap:15px;">
+                <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;background:#2a2a3e;padding:12px;border-radius:8px;">
+                    <input type="text" id="redis-host" placeholder="Host" value="localhost" style="width:140px;background:#0d0d14;color:#e0e0e0;border:1px solid #3a3a4e;border-radius:4px;padding:8px;">
+                    <input type="number" id="redis-port" placeholder="Port" value="6379" style="width:70px;background:#0d0d14;color:#e0e0e0;border:1px solid #3a3a4e;border-radius:4px;padding:8px;">
+                    <input type="password" id="redis-password" placeholder="Password" style="width:100px;background:#0d0d14;color:#e0e0e0;border:1px solid #3a3a4e;border-radius:4px;padding:8px;">
+                    <input type="number" id="redis-db" placeholder="DB" value="0" style="width:60px;background:#0d0d14;color:#e0e0e0;border:1px solid #3a3a4e;border-radius:4px;padding:8px;">
+                    <button class="action-btn" onclick="redisConnect()" style="background:linear-gradient(135deg,#dc382d 0%,#8b1a1a 100%);">Connect</button>
+                    <span id="redis-status" style="color:#8a8a9a;font-size:12px;"></span>
+                </div>
+                <div class="tab-header">
+                    <button class="tab-btn active" onclick="showRedisTab('info')">Info</button>
+                    <button class="tab-btn" onclick="showRedisTab('keys')">Keys</button>
+                    <button class="tab-btn" onclick="showRedisTab('command')">Command</button>
+                    <button class="tab-btn" onclick="showRedisTab('cluster')">Cluster</button>
+                </div>
+                <div id="redis-tab-info" class="tab-content active" style="flex:1;overflow:auto;">
+                    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:15px;">
+                        <div style="background:#2a2a3e;padding:12px;border-radius:8px;text-align:center;">
+                            <div style="font-size:20px;font-weight:bold;color:#dc382d;" id="redis-version">-</div>
+                            <div style="color:#8a8a9a;font-size:11px;">Version</div>
+                        </div>
+                        <div style="background:#2a2a3e;padding:12px;border-radius:8px;text-align:center;">
+                            <div style="font-size:20px;font-weight:bold;color:#4ade80;" id="redis-memory">-</div>
+                            <div style="color:#8a8a9a;font-size:11px;">Memory</div>
+                        </div>
+                        <div style="background:#2a2a3e;padding:12px;border-radius:8px;text-align:center;">
+                            <div style="font-size:20px;font-weight:bold;color:#fbbf24;" id="redis-keys">-</div>
+                            <div style="color:#8a8a9a;font-size:11px;">Keys</div>
+                        </div>
+                        <div style="background:#2a2a3e;padding:12px;border-radius:8px;text-align:center;">
+                            <div style="font-size:20px;font-weight:bold;color:#667eea;" id="redis-ops">-</div>
+                            <div style="color:#8a8a9a;font-size:11px;">Ops/sec</div>
+                        </div>
+                    </div>
+                    <div id="redis-info-details" style="background:#0d0d14;padding:15px;border-radius:6px;font-family:'Consolas',monospace;font-size:12px;color:#e0e0e0;"></div>
+                </div>
+                <div id="redis-tab-keys" class="tab-content" style="flex:1;display:flex;flex-direction:column;gap:10px;">
+                    <div style="display:flex;gap:10px;">
+                        <input type="text" id="redis-pattern" placeholder="Pattern (e.g. user:*)" value="*" style="flex:1;background:#0d0d14;color:#e0e0e0;border:1px solid #3a3a4e;border-radius:4px;padding:8px;">
+                        <button class="action-btn" onclick="redisScanKeys()" style="background:linear-gradient(135deg,#dc382d 0%,#8b1a1a 100%);">Scan</button>
+                    </div>
+                    <div id="redis-keys-list" style="flex:1;overflow:auto;background:#0d0d14;border-radius:6px;padding:10px;"></div>
+                </div>
+                <div id="redis-tab-command" class="tab-content" style="flex:1;display:flex;flex-direction:column;gap:10px;">
+                    <div style="display:flex;gap:10px;">
+                        <input type="text" id="redis-command" placeholder="GET key" style="flex:1;background:#0d0d14;color:#e0e0e0;border:1px solid #3a3a4e;border-radius:4px;padding:8px;font-family:'Consolas',monospace;">
+                        <button class="action-btn" onclick="redisExecCommand()" style="background:linear-gradient(135deg,#dc382d 0%,#8b1a1a 100%);">Execute</button>
+                    </div>
+                    <pre id="redis-command-result" style="flex:1;overflow:auto;background:#0d0d14;border-radius:6px;padding:10px;font-family:'Consolas',monospace;font-size:12px;color:#4ade80;margin:0;"></pre>
+                </div>
+                <div id="redis-tab-cluster" class="tab-content" style="flex:1;overflow:auto;">
+                    <div id="redis-cluster-info" style="background:#0d0d14;padding:15px;border-radius:6px;font-family:'Consolas',monospace;font-size:12px;color:#e0e0e0;"></div>
+                </div>
+            </div>
+            <div class="resize-handle" onmousedown="startResize(event, 'redis')"></div>
+        </div>
+
+        <!-- MySQL Window -->
+        <div id="window-mysql" class="window" style="width:950px;height:700px;left:160px;top:50px;">
+            <div class="window-header" onmousedown="startDrag(event, 'mysql')">
+                <div class="window-title">
+                    <svg fill="none" stroke="#00758f" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7"></path>
+                    </svg>
+                    MySQL / MariaDB
+                </div>
+                <div class="window-controls">
+                    <button class="window-btn minimize" onclick="minimizeWindow('mysql')">&#x2212;</button>
+                    <button class="window-btn maximize" onclick="maximizeWindow('mysql')" id="max-btn-mysql">&#x25A1;</button>
+                    <button class="window-btn close" onclick="closeWindow('mysql')">&times;</button>
+                </div>
+            </div>
+            <div class="window-content" style="display:flex;flex-direction:column;padding:15px;gap:15px;">
+                <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;background:#2a2a3e;padding:12px;border-radius:8px;">
+                    <input type="text" id="mysql-host" placeholder="Host" value="localhost" style="width:140px;background:#0d0d14;color:#e0e0e0;border:1px solid #3a3a4e;border-radius:4px;padding:8px;">
+                    <input type="number" id="mysql-port" placeholder="Port" value="3306" style="width:70px;background:#0d0d14;color:#e0e0e0;border:1px solid #3a3a4e;border-radius:4px;padding:8px;">
+                    <input type="text" id="mysql-user" placeholder="User" value="root" style="width:100px;background:#0d0d14;color:#e0e0e0;border:1px solid #3a3a4e;border-radius:4px;padding:8px;">
+                    <input type="password" id="mysql-password" placeholder="Password" style="width:100px;background:#0d0d14;color:#e0e0e0;border:1px solid #3a3a4e;border-radius:4px;padding:8px;">
+                    <input type="text" id="mysql-database" placeholder="Database" style="width:120px;background:#0d0d14;color:#e0e0e0;border:1px solid #3a3a4e;border-radius:4px;padding:8px;">
+                    <button class="action-btn" onclick="mysqlConnect()" style="background:linear-gradient(135deg,#00758f 0%,#003d4d 100%);">Connect</button>
+                    <span id="mysql-status" style="color:#8a8a9a;font-size:12px;"></span>
+                </div>
+                <div class="tab-header">
+                    <button class="tab-btn active" onclick="showMysqlTab('info')">Info</button>
+                    <button class="tab-btn" onclick="showMysqlTab('query')">Query</button>
+                    <button class="tab-btn" onclick="showMysqlTab('tables')">Tables</button>
+                    <button class="tab-btn" onclick="showMysqlTab('dump')">Dump</button>
+                </div>
+                <div id="mysql-tab-info" class="tab-content active" style="flex:1;overflow:auto;">
+                    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">
+                        <div style="background:#2a2a3e;padding:12px;border-radius:8px;text-align:center;">
+                            <div style="font-size:18px;font-weight:bold;color:#00758f;" id="mysql-version">-</div>
+                            <div style="color:#8a8a9a;font-size:11px;">Version</div>
+                        </div>
+                        <div style="background:#2a2a3e;padding:12px;border-radius:8px;text-align:center;">
+                            <div style="font-size:18px;font-weight:bold;color:#4ade80;" id="mysql-size">-</div>
+                            <div style="color:#8a8a9a;font-size:11px;">DB Size</div>
+                        </div>
+                        <div style="background:#2a2a3e;padding:12px;border-radius:8px;text-align:center;">
+                            <div style="font-size:18px;font-weight:bold;color:#fbbf24;" id="mysql-conns">-</div>
+                            <div style="color:#8a8a9a;font-size:11px;">Connections</div>
+                        </div>
+                        <div style="background:#2a2a3e;padding:12px;border-radius:8px;text-align:center;">
+                            <div style="font-size:18px;font-weight:bold;color:#667eea;" id="mysql-qps">-</div>
+                            <div style="color:#8a8a9a;font-size:11px;">Queries/sec</div>
+                        </div>
+                    </div>
+                </div>
+                <div id="mysql-tab-query" class="tab-content" style="flex:1;display:flex;flex-direction:column;gap:10px;">
+                    <textarea id="mysql-query" placeholder="SELECT * FROM table_name LIMIT 10;" style="height:100px;background:#0d0d14;color:#e0e0e0;border:1px solid #3a3a4e;border-radius:6px;padding:10px;font-family:'Consolas',monospace;resize:none;"></textarea>
+                    <div style="display:flex;gap:10px;">
+                        <button class="action-btn" onclick="mysqlExecuteQuery()" style="background:linear-gradient(135deg,#00758f 0%,#003d4d 100%);">Execute</button>
+                        <label style="display:flex;align-items:center;gap:5px;color:#8a8a9a;"><input type="checkbox" id="mysql-readonly" checked> Read-only</label>
+                        <span id="mysql-query-status" style="color:#8a8a9a;font-size:12px;margin-left:auto;"></span>
+                    </div>
+                    <div id="mysql-query-result" style="flex:1;overflow:auto;background:#0d0d14;border-radius:6px;padding:10px;font-family:'Consolas',monospace;font-size:12px;"></div>
+                </div>
+                <div id="mysql-tab-tables" class="tab-content" style="flex:1;overflow:auto;">
+                    <table style="width:100%;"><thead><tr><th>Table</th><th>Engine</th><th>Rows</th><th>Data Size</th><th>Index Size</th></tr></thead><tbody id="mysql-tables-tbody"></tbody></table>
+                </div>
+                <div id="mysql-tab-dump" class="tab-content" style="flex:1;display:flex;flex-direction:column;gap:10px;">
+                    <div style="display:flex;gap:15px;align-items:center;">
+                        <label style="color:#e0e0e0;display:flex;align-items:center;gap:5px;"><input type="checkbox" id="mysql-dump-schema"> Schema only</label>
+                        <label style="color:#e0e0e0;display:flex;align-items:center;gap:5px;"><input type="checkbox" id="mysql-dump-data"> Data only</label>
+                        <input type="text" id="mysql-dump-tables" placeholder="Tables (comma-separated)" style="flex:1;background:#0d0d14;color:#e0e0e0;border:1px solid #3a3a4e;border-radius:4px;padding:8px;">
+                        <button class="action-btn" onclick="mysqlDump()" style="background:linear-gradient(135deg,#00758f 0%,#003d4d 100%);">Generate Dump</button>
+                    </div>
+                    <textarea id="mysql-dump-output" readonly style="flex:1;background:#0d0d14;color:#4ade80;border:1px solid #3a3a4e;border-radius:6px;padding:10px;font-family:'Consolas',monospace;font-size:11px;resize:none;"></textarea>
+                </div>
+            </div>
+            <div class="resize-handle" onmousedown="startResize(event, 'mysql')"></div>
+        </div>
+
+        <!-- S3 Storage Window -->
+        <div id="window-s3" class="window" style="width:1000px;height:700px;left:140px;top:50px;">
+            <div class="window-header" onmousedown="startDrag(event, 's3')">
+                <div class="window-title">
+                    <svg fill="none" stroke="#ff9900" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/>
+                    </svg>
+                    S3 Storage
+                </div>
+                <div class="window-controls">
+                    <button class="window-btn minimize" onclick="minimizeWindow('s3')">&#x2212;</button>
+                    <button class="window-btn maximize" onclick="maximizeWindow('s3')" id="max-btn-s3">&#x25A1;</button>
+                    <button class="window-btn close" onclick="closeWindow('s3')">&times;</button>
+                </div>
+            </div>
+            <div class="window-content" style="display:flex;flex-direction:column;padding:15px;gap:15px;">
+                <!-- Connection Form -->
+                <div class="conn-form" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;background:#2a2a3e;padding:12px;border-radius:8px;">
+                    <select id="s3-preset" onchange="s3LoadPreset()" style="width:100px;background:#0d0d14;color:#e0e0e0;border:1px solid #3a3a4e;border-radius:4px;padding:8px;">
+                        <option value="">Custom</option>
+                        <option value="aws">AWS S3</option>
+                        <option value="minio">MinIO</option>
+                    </select>
+                    <input type="text" id="s3-endpoint" placeholder="Endpoint" value="s3.amazonaws.com" style="width:180px;background:#0d0d14;color:#e0e0e0;border:1px solid #3a3a4e;border-radius:4px;padding:8px;">
+                    <input type="text" id="s3-region" placeholder="Region" value="us-east-1" style="width:100px;background:#0d0d14;color:#e0e0e0;border:1px solid #3a3a4e;border-radius:4px;padding:8px;">
+                    <input type="text" id="s3-access-key" placeholder="Access Key" style="width:140px;background:#0d0d14;color:#e0e0e0;border:1px solid #3a3a4e;border-radius:4px;padding:8px;">
+                    <input type="password" id="s3-secret-key" placeholder="Secret Key" style="width:140px;background:#0d0d14;color:#e0e0e0;border:1px solid #3a3a4e;border-radius:4px;padding:8px;">
+                    <label style="display:flex;align-items:center;gap:4px;color:#8a8a9a;font-size:12px;">
+                        <input type="checkbox" id="s3-ssl" checked> SSL
+                    </label>
+                    <button class="action-btn" onclick="s3Connect()" style="background:linear-gradient(135deg,#ff9900 0%,#cc7a00 100%);">Connect</button>
+                    <span id="s3-conn-status" style="color:#8a8a9a;font-size:12px;"></span>
+                </div>
+
+                <!-- Tabs -->
+                <div class="tab-header">
+                    <button class="tab-btn active" onclick="showS3Tab('buckets')">Buckets</button>
+                    <button class="tab-btn" onclick="showS3Tab('objects')">Objects</button>
+                </div>
+
+                <!-- Buckets Tab -->
+                <div id="s3-tab-buckets" class="tab-content active" style="flex:1;overflow:auto;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                        <span style="color:#8a8a9a;font-size:12px;">Connect to view buckets</span>
+                        <button class="action-btn" onclick="s3CreateBucket()" style="background:linear-gradient(135deg,#ff9900 0%,#cc7a00 100%);">Create Bucket</button>
+                    </div>
+                    <div id="s3-buckets-list" class="table-container" style="background:#1e1e2e;border-radius:6px;padding:10px;">
+                        <div style="color:#6b7280;padding:20px;text-align:center;">Connect to S3 to view buckets</div>
+                    </div>
+                </div>
+
+                <!-- Objects Tab -->
+                <div id="s3-tab-objects" class="tab-content" style="flex:1;display:flex;flex-direction:column;gap:10px;">
+                    <!-- Current bucket and path -->
+                    <div style="display:flex;gap:10px;align-items:center;">
+                        <span style="color:#8a8a9a;font-size:12px;">Bucket:</span>
+                        <span id="s3-current-bucket" style="color:#ff9900;font-weight:bold;">-</span>
+                        <span style="color:#8a8a9a;font-size:12px;margin-left:10px;">Path:</span>
+                        <span id="s3-path" style="color:#f0f0f0;font-family:monospace;font-size:12px;">/</span>
+                    </div>
+                    <!-- Toolbar -->
+                    <div style="display:flex;gap:10px;">
+                        <button class="action-btn" onclick="s3GoUp()" style="background:linear-gradient(135deg,#4a4a5e 0%,#3a3a4e 100%);">&#8593; Up</button>
+                        <button class="action-btn" onclick="s3UploadFiles()" style="background:linear-gradient(135deg,#ff9900 0%,#cc7a00 100%);">&#8593; Upload</button>
+                        <button class="action-btn" onclick="s3LoadObjects()" style="background:linear-gradient(135deg,#4a4a5e 0%,#3a3a4e 100%);">&#8635; Refresh</button>
+                        <span id="s3-upload-status" style="display:none;color:#60a5fa;font-size:12px;margin-left:auto;"></span>
+                    </div>
+                    <!-- Hidden file input for uploads -->
+                    <input type="file" id="s3-file-input" multiple style="display:none;" onchange="s3HandleFileSelect()">
+                    <!-- Objects list -->
+                    <div id="s3-objects-list" class="table-container" style="flex:1;overflow:auto;background:#1e1e2e;border-radius:6px;padding:10px;">
+                        <div style="color:#6b7280;padding:20px;text-align:center;">Select a bucket to browse objects</div>
+                    </div>
+                </div>
+            </div>
+            <div class="resize-handle" onmousedown="startResize(event, 's3')"></div>
+        </div>
+
+        <!-- S3 Info/Presign Modal -->
+        <div id="s3-info-modal" class="k8s-modal-overlay" style="display:none;">
+            <div class="k8s-modal" style="max-width:600px;">
+                <div class="k8s-modal-header">
+                    <h3 style="display:flex;align-items:center;gap:8px;">
+                        <svg fill="none" stroke="#ff9900" viewBox="0 0 24 24" style="width:20px;height:20px;">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/>
+                        </svg>
+                        Object Details
+                    </h3>
+                    <button class="k8s-modal-close" onclick="s3CloseModal()">&times;</button>
+                </div>
+                <div class="k8s-modal-body" id="s3-info-content" style="max-height:400px;overflow:auto;">
+                    Loading...
+                </div>
+                <div class="k8s-modal-footer">
+                    <button class="modal-btn cancel" onclick="s3CloseModal()">Close</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Elasticsearch Window -->
+        <div id="window-elasticsearch" class="window" style="width:1100px;height:750px;left:160px;top:40px;">
+            <div class="window-header" onmousedown="startDrag(event, 'elasticsearch')">
+                <div class="window-title">
+                    <svg fill="none" stroke="#f59e0b" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                    Elasticsearch
+                </div>
+                <div class="window-controls">
+                    <button class="window-btn minimize" onclick="minimizeWindow('elasticsearch')">&#x2212;</button>
+                    <button class="window-btn maximize" id="max-btn-elasticsearch" onclick="maximizeWindow('elasticsearch')">&#x25A1;</button>
+                    <button class="window-btn close" onclick="closeWindow('elasticsearch')">&times;</button>
+                </div>
+            </div>
+            <div class="window-content" style="display:flex;flex-direction:column;padding:15px;gap:15px;">
+                <!-- Connection Form -->
+                <div class="conn-form" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;background:#2a2a3e;padding:12px;border-radius:8px;">
+                    <select id="es-preset" onchange="esLoadPreset()" style="padding:6px 10px;background:#1e1e2e;border:1px solid #3a3a4e;border-radius:4px;color:#e4e4e7;font-size:13px;">
+                        <option value="">Custom</option>
+                        <option value="local">Local (9200)</option>
+                        <option value="docker">Docker</option>
+                        <option value="cloud">Elastic Cloud</option>
+                    </select>
+                    <input type="text" id="es-host" placeholder="Host" value="localhost" style="width:150px;padding:6px 10px;background:#1e1e2e;border:1px solid #3a3a4e;border-radius:4px;color:#e4e4e7;font-size:13px;">
+                    <input type="number" id="es-port" placeholder="Port" value="9200" style="width:80px;padding:6px 10px;background:#1e1e2e;border:1px solid #3a3a4e;border-radius:4px;color:#e4e4e7;font-size:13px;">
+                    <input type="text" id="es-username" placeholder="Username" style="width:100px;padding:6px 10px;background:#1e1e2e;border:1px solid #3a3a4e;border-radius:4px;color:#e4e4e7;font-size:13px;">
+                    <input type="password" id="es-password" placeholder="Password" style="width:100px;padding:6px 10px;background:#1e1e2e;border:1px solid #3a3a4e;border-radius:4px;color:#e4e4e7;font-size:13px;">
+                    <label style="display:flex;align-items:center;gap:4px;color:#8a8a9a;font-size:12px;">
+                        <input type="checkbox" id="es-ssl"> SSL
+                    </label>
+                    <button class="action-btn" onclick="esConnect()">Connect</button>
+                    <span id="es-conn-status" style="color:#8a8a9a;font-size:12px;flex:1;text-align:right;"></span>
+                </div>
+
+                <!-- Tabs -->
+                <div class="tab-header">
+                    <button class="tab-btn active" onclick="showEsTab('cluster')">Cluster</button>
+                    <button class="tab-btn" onclick="showEsTab('indices')">Indices</button>
+                    <button class="tab-btn" onclick="showEsTab('documents')">Documents</button>
+                    <button class="tab-btn" onclick="showEsTab('query')">Query Console</button>
+                </div>
+
+                <!-- Cluster Tab -->
+                <div id="es-tab-cluster" class="tab-content active" style="flex:1;overflow:auto;">
+                    <div id="es-cluster-overview" style="padding:10px;">
+                        <div style="color:#8a8a9a;">Connect to an Elasticsearch cluster to view info</div>
+                    </div>
+                </div>
+
+                <!-- Indices Tab -->
+                <div id="es-tab-indices" class="tab-content" style="flex:1;display:flex;flex-direction:column;gap:10px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                        <span style="color:#e4e4e7;font-size:14px;">Indices</span>
+                        <div style="display:flex;gap:8px;">
+                            <button class="action-btn" onclick="esLoadIndices()">Refresh</button>
+                            <button class="action-btn" onclick="esCreateIndex()">Create Index</button>
+                        </div>
+                    </div>
+                    <div id="es-indices-list" class="table-container" style="flex:1;overflow:auto;">
+                        <div style="color:#8a8a9a;padding:20px;">Connect to view indices</div>
+                    </div>
+                </div>
+
+                <!-- Documents Tab -->
+                <div id="es-tab-documents" class="tab-content" style="flex:1;display:flex;flex-direction:column;gap:10px;">
+                    <div style="display:flex;gap:10px;align-items:center;">
+                        <span style="color:#8a8a9a;font-size:12px;">Index:</span>
+                        <input type="text" id="es-search-index" placeholder="Index name" style="width:200px;padding:6px 10px;background:#1e1e2e;border:1px solid #3a3a4e;border-radius:4px;color:#e4e4e7;font-size:13px;">
+                        <input type="text" id="es-search-query" placeholder="Search query (optional)" style="flex:1;padding:6px 10px;background:#1e1e2e;border:1px solid #3a3a4e;border-radius:4px;color:#e4e4e7;font-size:13px;">
+                        <button class="action-btn" onclick="esSearchDocuments()">Search</button>
+                    </div>
+                    <div style="color:#8a8a9a;font-size:12px;">
+                        Current index: <span id="es-current-index" style="color:#60a5fa;">-</span>
+                    </div>
+                    <div id="es-documents-list" style="flex:1;overflow:auto;">
+                        <div style="color:#8a8a9a;padding:20px;">Select an index to browse documents</div>
+                    </div>
+                </div>
+
+                <!-- Query Console Tab -->
+                <div id="es-tab-query" class="tab-content" style="flex:1;display:flex;flex-direction:column;gap:10px;">
+                    <div style="display:flex;gap:10px;align-items:center;">
+                        <select id="es-query-method" style="padding:6px 10px;background:#1e1e2e;border:1px solid #3a3a4e;border-radius:4px;color:#e4e4e7;font-size:13px;">
+                            <option value="GET">GET</option>
+                            <option value="POST">POST</option>
+                            <option value="PUT">PUT</option>
+                            <option value="DELETE">DELETE</option>
+                        </select>
+                        <input type="text" id="es-query-path" placeholder="/_cluster/health" value="/_cluster/health" style="flex:1;padding:6px 10px;background:#1e1e2e;border:1px solid #3a3a4e;border-radius:4px;color:#e4e4e7;font-size:13px;font-family:monospace;">
+                        <button class="action-btn" onclick="esExecuteQuery()">Execute</button>
+                    </div>
+                    <div style="flex:1;display:flex;gap:10px;">
+                        <div style="flex:1;display:flex;flex-direction:column;">
+                            <label style="color:#8a8a9a;font-size:12px;margin-bottom:4px;">Request Body (JSON)</label>
+                            <textarea id="es-query-body" placeholder='{"query": {"match_all": {}}}' style="flex:1;padding:10px;background:#0d0d14;border:1px solid #3a3a4e;border-radius:4px;color:#e4e4e7;font-size:12px;font-family:monospace;resize:none;"></textarea>
+                        </div>
+                        <div style="flex:1;display:flex;flex-direction:column;">
+                            <label style="color:#8a8a9a;font-size:12px;margin-bottom:4px;">Response</label>
+                            <pre id="es-query-result" style="flex:1;padding:10px;background:#0d0d14;border:1px solid #3a3a4e;border-radius:4px;color:#4ade80;font-size:12px;overflow:auto;margin:0;"></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="resize-handle" onmousedown="startResize(event, 'elasticsearch')"></div>
+        </div>
+
+        <!-- Elasticsearch Modal -->
+        <div id="es-modal" class="k8s-modal-overlay" style="display:none;">
+            <div class="k8s-modal" style="max-width:800px;">
+                <div class="k8s-modal-header">
+                    <h3 id="es-modal-title">Details</h3>
+                    <button class="k8s-modal-close" onclick="esCloseModal()">&times;</button>
+                </div>
+                <div class="k8s-modal-body" style="max-height:500px;overflow:auto;">
+                    <pre id="es-modal-content" style="background:#0d0d14;padding:15px;border-radius:4px;color:#e4e4e7;font-size:12px;overflow:auto;margin:0;"></pre>
+                </div>
+                <div class="k8s-modal-footer">
+                    <button class="modal-btn" onclick="esCopyModalContent()">Copy</button>
+                    <button class="modal-btn cancel" onclick="esCloseModal()">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Taskbar -->
+    <div id="taskbar">
+        <button id="start-btn" onclick="toggleStartMenu()">
+            <svg viewBox="0 4 24 16" fill="none" stroke="#ED8A2C" stroke-width="2">
+                <path d="M18.178 8c5.096 0 5.096 8 0 8-5.095 0-7.133-8-12.739-8-4.585 0-4.585 8 0 8 5.606 0 7.644-8 12.739-8z"/>
+            </svg>
+        </button>
+        <div id="taskbar-apps"></div>
+        <div id="taskbar-right">
+            <div class="status-indicator">
+                <div id="health-dot" class="status-dot"></div>
+                <span id="health-text">Checking...</span>
+            </div>
+            <div id="clock"></div>
+            <button id="logout-btn" onclick="logout()">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                </svg>
+                Logout
+            </button>
+        </div>
+    </div>
+
+    <!-- K8s Modals -->
+    <!-- Edit Mode Confirmation Modal -->
+    <div id="edit-mode-confirm-modal" class="k8s-modal-overlay">
+        <div class="k8s-modal small">
+            <div class="k8s-modal-header">
+                <h3>
+                    <svg fill="none" stroke="#fbbf24" viewBox="0 0 24 24" style="width:20px;height:20px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                    Enable Edit Mode
+                </h3>
+                <button class="k8s-modal-close" onclick="closeModal('edit-mode-confirm-modal')">&times;</button>
+            </div>
+            <div class="k8s-modal-body">
+                <div class="warning-box">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                    <div class="warning-box-content">
+                        <h4>Caution: Destructive Actions</h4>
+                        <p>Edit mode allows you to modify and delete Kubernetes resources. Actions cannot be undone.</p>
+                    </div>
+                </div>
+                <p style="color:#a0a0b0;font-size:13px;margin-top:12px;">
+                    Edit mode will automatically disable after <strong style="color:white;">5 minutes</strong> for safety.
+                </p>
+            </div>
+            <div class="k8s-modal-footer">
+                <button class="modal-btn cancel" onclick="closeModal('edit-mode-confirm-modal')">Cancel</button>
+                <button class="modal-btn warning" onclick="enableEditMode()">Enable Edit Mode</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Describe Modal -->
+    <div id="describe-modal" class="k8s-modal-overlay">
+        <div class="k8s-modal">
+            <div class="k8s-modal-header">
+                <h3 id="describe-modal-title">Resource Details</h3>
+                <button class="k8s-modal-close" onclick="closeModal('describe-modal')">&times;</button>
+            </div>
+            <div class="k8s-modal-body">
+                <div class="resource-info" id="describe-resource-info"></div>
+                <div class="yaml-viewer" id="describe-yaml">Loading...</div>
+            </div>
+            <div id="describe-decoded-output" style="display:none;margin:0 20px 10px;padding:12px;background:#1a1a2e;border:1px solid #334155;border-radius:6px;max-height:300px;overflow:auto;font-family:monospace;font-size:13px;white-space:pre-wrap;color:#e2e8f0;user-select:text;cursor:text;"></div>
+            <div class="k8s-modal-footer">
+                <button id="describe-decode-btn" class="modal-btn" style="display:none;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;" onclick="decodeDescribedSecret()">Decode Secret</button>
+                <button class="modal-btn cancel" onclick="closeModal('describe-modal')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div id="edit-modal" class="k8s-modal-overlay">
+        <div class="k8s-modal">
+            <div class="k8s-modal-header">
+                <h3 id="edit-modal-title">Edit Resource</h3>
+                <button class="k8s-modal-close" onclick="closeModal('edit-modal')">&times;</button>
+            </div>
+            <div class="k8s-modal-body">
+                <p style="color:#8a8a9a;font-size:12px;margin-bottom:12px;">Edit the YAML below and click Save to apply changes.</p>
+                <textarea class="yaml-editor" id="edit-yaml-editor">Loading...</textarea>
+            </div>
+            <div class="k8s-modal-footer">
+                <button class="modal-btn cancel" onclick="closeModal('edit-modal')">Cancel</button>
+                <button class="modal-btn primary" onclick="saveResourceEdit()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="delete-modal" class="k8s-modal-overlay">
+        <div class="k8s-modal small">
+            <div class="k8s-modal-header">
+                <h3>
+                    <svg fill="none" stroke="#ef4444" viewBox="0 0 24 24" style="width:20px;height:20px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                    </svg>
+                    Delete Resource
+                </h3>
+                <button class="k8s-modal-close" onclick="closeModal('delete-modal')">&times;</button>
+            </div>
+            <div class="k8s-modal-body">
+                <div class="warning-box">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                    <div class="warning-box-content">
+                        <h4>This action cannot be undone</h4>
+                        <p>The resource will be permanently deleted from the cluster.</p>
+                    </div>
+                </div>
+                <div class="resource-info" style="margin-top:16px;">
+                    <div class="resource-info-item"><span class="label">Name</span><span class="value" id="delete-resource-name"></span></div>
+                    <div class="resource-info-item"><span class="label">Type</span><span class="value" id="delete-resource-type"></span></div>
+                    <div class="resource-info-item"><span class="label">Namespace</span><span class="value" id="delete-resource-namespace"></span></div>
+                </div>
+                <div style="margin-top:16px;">
+                    <label style="color:#8a8a9a;font-size:12px;display:block;margin-bottom:6px;">Type <strong style="color:#ef4444;cursor:pointer;text-decoration:underline;" onclick="var i=document.getElementById('delete-confirm-input'),b=document.getElementById('delete-confirm-btn');i.value='delete';b.disabled=false;b.style.opacity='1';b.style.cursor='pointer';">delete</strong> to confirm</label>
+                    <input type="text" id="delete-confirm-input" autocomplete="off" spellcheck="false" placeholder="delete" oninput="var b=document.getElementById('delete-confirm-btn'),ok=this.value.toLowerCase()==='delete';b.disabled=!ok;b.style.opacity=ok?'1':'0.5';b.style.cursor=ok?'pointer':'not-allowed';" style="width:100%;padding:8px 12px;background:#0d0d14;color:#e0e0e0;border:1px solid #3a3a4e;border-radius:6px;font-family:'Consolas',monospace;font-size:13px;box-sizing:border-box;">
+                </div>
+            </div>
+            <div class="k8s-modal-footer">
+                <button class="modal-btn cancel" onclick="closeModal('delete-modal')">Cancel</button>
+                <button id="delete-confirm-btn" class="modal-btn danger" onclick="confirmDelete()" disabled style="opacity:0.5;cursor:not-allowed;">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Logs Modal -->
+    <div id="logs-modal" class="k8s-modal-overlay">
+        <div class="k8s-modal">
+            <div class="k8s-modal-header">
+                <h3 id="logs-modal-title">Pod Logs</h3>
+                <button class="k8s-modal-close" onclick="closeModal('logs-modal')">&times;</button>
+            </div>
+            <div class="k8s-modal-body">
+                <div class="logs-viewer" id="logs-content">Loading...</div>
+            </div>
+            <div class="k8s-modal-footer">
+                <button class="modal-btn cancel" onclick="closeModal('logs-modal')">Close</button>
+                <button class="modal-btn primary" onclick="refreshLogs()">Refresh</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scale Modal -->
+    <div id="scale-modal" class="k8s-modal-overlay">
+        <div class="k8s-modal small">
+            <div class="k8s-modal-header">
+                <h3>Scale Deployment</h3>
+                <button class="k8s-modal-close" onclick="closeModal('scale-modal')">&times;</button>
+            </div>
+            <div class="k8s-modal-body">
+                <p style="color:#a0a0b0;font-size:13px;">Scale deployment <strong style="color:white;" id="scale-deployment-name"></strong> to:</p>
+                <div class="scale-input">
+                    <label>Replicas:</label>
+                    <input type="number" id="scale-replicas" min="0" max="100" value="1">
+                </div>
+            </div>
+            <div class="k8s-modal-footer">
+                <button class="modal-btn cancel" onclick="closeModal('scale-modal')">Cancel</button>
+                <button class="modal-btn primary" onclick="confirmScale()">Scale</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Restart Modal -->
+    <div id="restart-modal" class="k8s-modal-overlay">
+        <div class="k8s-modal small">
+            <div class="k8s-modal-header">
+                <h3>Restart Deployment</h3>
+                <button class="k8s-modal-close" onclick="closeModal('restart-modal')">&times;</button>
+            </div>
+            <div class="k8s-modal-body">
+                <p style="color:#a0a0b0;font-size:13px;">
+                    Are you sure you want to restart deployment <strong style="color:white;" id="restart-deployment-name"></strong>?
+                </p>
+                <p style="color:#6a6a7a;font-size:12px;margin-top:8px;">
+                    This will trigger a rolling restart of all pods.
+                </p>
+            </div>
+            <div class="k8s-modal-footer">
+                <button class="modal-btn cancel" onclick="closeModal('restart-modal')">Cancel</button>
+                <button class="modal-btn warning" onclick="confirmRestart()">Restart</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Resource Modal -->
+    <div id="create-modal" class="k8s-modal-overlay">
+        <div class="k8s-modal" style="max-width:800px;">
+            <div class="k8s-modal-header">
+                <h3>
+                    <svg fill="none" stroke="#10b981" viewBox="0 0 24 24" style="width:20px;height:20px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    Create Resource
+                </h3>
+                <button class="k8s-modal-close" onclick="closeModal('create-modal')">&times;</button>
+            </div>
+            <div class="k8s-modal-body">
+                <div class="create-form-row">
+                    <div class="create-form-group">
+                        <label>Resource Type</label>
+                        <select id="create-resource-type" onchange="loadResourceTemplate()">
+                            <option value="">Select type...</option>
+                            <option value="deployment">Deployment</option>
+                            <option value="service">Service</option>
+                            <option value="configmap">ConfigMap</option>
+                            <option value="secret">Secret</option>
+                            <option value="ingress">Ingress</option>
+                            <option value="pod">Pod</option>
+                            <option value="cronjob">CronJob</option>
+                            <option value="job">Job</option>
+                            <option value="pvc">PersistentVolumeClaim</option>
+                            <option value="serviceaccount">ServiceAccount</option>
+                            <option value="daemonset">DaemonSet</option>
+                            <option value="statefulset">StatefulSet</option>
+                        </select>
+                    </div>
+                    <div class="create-form-group">
+                        <label>Namespace</label>
+                        <select id="create-namespace">
+                            <option value="default">default</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="create-form-group" style="margin-top:12px;">
+                    <label>Resource YAML</label>
+                    <textarea class="yaml-editor" id="create-yaml-editor" placeholder="Select a resource type to load a template..."></textarea>
+                </div>
+            </div>
+            <div class="k8s-modal-footer">
+                <button class="modal-btn cancel" onclick="closeModal('create-modal')">Cancel</button>
+                <button class="modal-btn success" onclick="createResource()">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Desktop Context Menu -->
+    <div id="desktop-context-menu" class="context-menu">
+        <div class="context-menu-item" onclick="toggleIconEditMode()">
+            <span id="edit-mode-menu-label">Edit Layout</span>
+        </div>
+        <div class="context-menu-item has-submenu">
+            <span>Show Hidden</span>
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:12px;height:12px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+            <div class="context-submenu" id="hidden-icons-menu"></div>
+        </div>
+        <div class="context-menu-separator"></div>
+        <div class="context-menu-item" onclick="saveDesktopPreferences()">
+            <span>Save Layout</span>
+            <svg fill="none" stroke="#4ade80" viewBox="0 0 24 24" style="width:14px;height:14px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+        </div>
+        <div class="context-menu-item" onclick="resetDesktopPreferences()">
+            <span>Reset to Default</span>
+            <svg fill="none" stroke="#f97316" viewBox="0 0 24 24" style="width:14px;height:14px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+        </div>
+    </div>
+
+    <style>
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+    </style>
+
+    <script type="module" src="js/app.js?v=0.29.0"></script>
+</body>
+</html>

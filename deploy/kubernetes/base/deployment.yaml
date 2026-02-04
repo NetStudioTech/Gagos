@@ -1,0 +1,97 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gagos
+  namespace: gagos
+  labels:
+    app: gagos
+spec:
+  replicas: 1  # Single replica for BBolt file-based storage
+  selector:
+    matchLabels:
+      app: gagos
+  template:
+    metadata:
+      labels:
+        app: gagos
+    spec:
+      serviceAccountName: gagos
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+        - name: gagos
+          image: netstudioge/gagos:latest
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          env:
+            - name: GAGOS_SERVER_HOST
+              value: "0.0.0.0"
+            - name: GAGOS_SERVER_PORT
+              value: "8080"
+            - name: GAGOS_LOG_LEVEL
+              value: "info"
+            - name: GAGOS_DB_PATH
+              value: "/data/gagos.db"
+            - name: GAGOS_STORAGE_TYPE
+              value: "bbolt"
+            - name: GAGOS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: gagos-auth
+                  key: password
+            - name: GAGOS_RUNTIME
+              value: "kubernetes"
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+              add:
+                - NET_RAW
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 3
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: config
+              mountPath: /app/configs
+              readOnly: true
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: config
+          configMap:
+            name: gagos-config
+        - name: data
+          persistentVolumeClaim:
+            claimName: gagos-data

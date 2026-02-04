@@ -1,0 +1,66 @@
+# GAGOS - Quick Start Deployment
+# Minimal setup for testing and development
+#
+# Usage:
+#   # Create namespace and generate random password
+#   kubectl create namespace gagos
+#   kubectl create secret generic gagos-auth -n gagos \
+#     --from-literal=password=$(openssl rand -base64 12)
+#
+#   # Deploy
+#   kubectl apply -f gagos-quick-start.yaml
+#
+#   # Get your password
+#   kubectl get secret gagos-auth -n gagos -o jsonpath='{.data.password}' | base64 -d && echo
+#
+#   # Access
+#   kubectl port-forward -n gagos svc/gagos 9197:8080
+#
+# Note: Uses emptyDir - data is lost on pod restart.
+#       For production, use gagos-persistent.yaml instead.
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gagos
+  namespace: gagos
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gagos
+  template:
+    metadata:
+      labels:
+        app: gagos
+    spec:
+      containers:
+        - name: gagos
+          image: netstudioge/gagos:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: GAGOS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: gagos-auth
+                  key: password
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gagos
+  namespace: gagos
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8080
+      targetPort: 8080
+  selector:
+    app: gagos
